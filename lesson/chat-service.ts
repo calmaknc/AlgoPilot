@@ -88,32 +88,49 @@ export function createChatService(options: { directory?: URL; runModel?: ModelRu
         if (typeof message !== 'string' || message.trim().length < 1 || message.trim().length > 10000) {
             throw new AppError(400, 'INVALID_MESSAGE', 'message必须是长度为1～10000的字符串');
         }
-        const trimmedMessage = message.trim();
-        const conversation = await getConversation(conversationId);
-        const userMessage: Message = {
-            role: 'user',
-            content: trimmedMessage,
-        };
-        const input = structuredClone([...conversation.messages, userMessage]);
 
-        let reply: string;
-
-        try {
-            reply = await runModel(input, callbacks.onChunk, callbacks.onTool);
-
-            if (typeof reply === 'string' && reply.trim().length > 0) {
-                throw new AppError(400, 'INVALID_REPLY', 'invalid reply')
-            }
-        } catch {
-            throw new AppError(502, 'MODEL_ERROR', '模型调用失败，本轮未保存');
+        if (busy.has(conversationId)) {
+            throw new AppError(409, 'CONVERSATION_BUSY', '当前会话正忙');
         }
+        busy.add(conversationId);
+        try {
+            const trimmedMessage = message.trim();
+            const conversation = await getConversation(conversationId);
+            const userMessage: Message = {
+                role: 'user',
+                content: trimmedMessage,
+            };
+            const input = structuredClone([...conversation.messages, userMessage]);
 
+            let reply: string;
 
-        // TODO 4：在上面链路跑通后添加并发控制。
-        // busy.has / add / delete 分别放在哪里？
-        // “查忙、标记”之间不要 await；获取资格后再读取最新历史。
-        // 用 finally 保证模型或存储失败时也释放资格。
-        throw new AppError(501, 'NOT_IMPLEMENTED', '请实现 chat');
+            try {
+                reply = await runModel(input, callbacks.onChunk, callbacks.onTool);
+
+                if (typeof reply !== 'string' || reply.trim().length === 0) {
+                    throw new Error('模型没有返回有效文本');
+                }
+            } catch {
+                throw new AppError(502, 'MODEL_ERROR', '模型调用失败，本轮未保存');
+            }
+            conversation.messages.push(
+                userMessage, {role: 'assistant', content: reply}
+            );
+            if (conversation.title === '新会话') {
+                conversation.title = trimmedMessage.slice(0, 30);
+            }
+
+            try {
+                await saveConversation(conversation, directory);
+            } catch {
+                throw new AppError(500, 'STORAGE_ERROR', '会话保存失败，请读取历史核对保存状态');
+            }
+
+            return {conversationId, reply, conversation};
+        } finally {
+            busy.delete(conversationId);
+        }
+        
     }
 
     return { newConversation, getConversation, chat };

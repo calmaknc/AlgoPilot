@@ -1,50 +1,15 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
-import {
-    addMessage,
-    formatMessages,
-} from './messages.ts'
-import { requestModel } from './model.ts';
-import type { Message } from './messages.ts'
-import { saveConversation, loadConversation, loadLastConversation, createConversation } from './session.ts';
+import { formatMessages } from './messages.ts'
+import { saveConversation, loadLastConversation } from './session.ts';
 import type {Conversation} from './session.ts'
-
-async function agentLoop(messages: Message[], input: string): Promise<void> {
-    const userMessage: Message = {
-        role: 'user',
-        content: input
-    };
-
-    stdout.write('助手：');
-
-    let reply: string;
-    try {
-        reply = await requestModel(
-            [...messages, userMessage],
-            (text) => {
-                stdout.write(text);
-            },
-            (name, argumentsJson, output) => {
-                stdout.write(`\n[工具] ${name} 参数：${argumentsJson}\n`);
-                stdout.write(`[结果] ${output}\n助手：`);
-            }
-        );
-    } finally {
-        // 正常结束或中途报错后都换行，避免后续提示紧贴回复。
-        stdout.write('\n\n');
-    }
-
-    addMessage(messages, 'user', input);
-    addMessage(messages, 'assistant', reply);
-
-}
+import { createChatService } from './chat-service.ts';
 
 async function main(): Promise<void> {
+    const service = createChatService();
     const requestedId = process.argv[2];
-    let conversation: Conversation = requestedId
-        ? await loadConversation(requestedId)
-        : await loadLastConversation();
+    let conversation: Conversation = requestedId ? await service.getConversation(requestedId): await loadLastConversation();
     await saveConversation(conversation);
 
     const terminal = createInterface({
@@ -60,8 +25,6 @@ async function main(): Promise<void> {
             const input = (await terminal.question('你： ')).trim();
 
             if (input === '/exit') {
-                // 如果之前保存失败，退出时再尝试保存内存中的记录。
-                await saveConversation(conversation);
                 break;
             }
 
@@ -70,16 +33,18 @@ async function main(): Promise<void> {
             }
 
             if (input === '/history') {
-                console.log(formatMessages(conversation.messages).join('\n'));
+                try {
+                    conversation = await service.getConversation(conversation.id);
+                    console.log(formatMessages(conversation.messages).join('\n'));
+                } catch {
+                    console.log('读取失败');
+                }
                 continue;
             }
 
             if (input === '/new') {
                 try {
-                    await saveConversation(conversation);
-                    const next = createConversation();
-                    await saveConversation(next);
-                    conversation = next;
+                    conversation = await service.newConversation();
                     console.log(`已创建会话：${conversation.id}`);
                 } catch (error) {
                     console.error('切换会话失败，仍保留当前会话：', error);
@@ -88,14 +53,22 @@ async function main(): Promise<void> {
             }
 
             try {
-                await agentLoop(conversation.messages, input);
-                if (conversation.title === '新会话') {
-                    conversation.title = input.slice(0, 30);
-                }
+                stdout.write('助手： ');
                 try {
-                    await saveConversation(conversation);
-                } catch (error) {
-                    console.error('回答已保留在内存，但保存到磁盘失败：', error);
+                    const result = await service.chat(
+                        conversation.id,
+                        input,
+                        {
+                            onChunk: (text) => {stdout.write(text);},
+                            onTool: (name, argumentsJson, output) => {
+                                stdout.write(`\n[工具] ${name} 参数： ${argumentsJson}\n`);
+                                stdout.write(`[结果] ${output}\n助手： `);
+                            }
+                        }
+                    );
+                    conversation = result.conversation;
+                } finally {
+                    stdout.write('\n\n');
                 }
             } catch (error) {
                 if (error instanceof Error) {
