@@ -1,8 +1,17 @@
 # Mini FastGPT：对照代码理解整个应用
 
-更新日期：2026-10-20。本文记录当前实现，不包含尚未完成的网页、向量检索和取消生成。
+更新日期：2026-10-21。下文主体讲解原生 HTTP 版本；Express 迁移后的对应关系如下。
 
-阅读时可以在编辑器里同时打开本文和对应文件。建议顺序：`main.ts` → `http-server.ts` → `chat-service.ts` → `model.ts` → `tool-registry.ts` → `tool.ts` → `session.ts`。
+- 新入口 `lesson/express-server.ts` 监听 3001，调用 `lesson/express-app.ts` 中的 `createExpressApp()`；原生 HTTP 版本已归档至 `lesson/archive/`，供学习对照。
+- 路由、媒体类型检查、JSON 解析、64 KiB 限制、405/404 和统一错误处理中间件都在 `express-app.ts`。业务服务、模型循环、工具和存储继续复用。
+- Express 默认支持 GET 对应的 HEAD；错误路径编码返回 400；错误 JSON 返回 400，超限返回 413，媒体类型不支持返回 415。
+- `express.static` 只提供 `public/` 里的网页文件，浏览器打开 `http://127.0.0.1:3001/`。`app.js` 在浏览器运行，已接通网页聊天、新建和读取会话。当前完整回复一次性展示。
+- 启动：`node --env-file=.env lesson/express-server.ts`。
+- 新增 `test/express.test.mjs`：使用临时存储和模拟模型，通过真实本机 HTTP 验证路由、两轮历史、模型失败、并发冲突及静态文件；测试环境需要允许监听本机端口。
+
+下文不包含尚未完成的网页聊天、向量检索和取消生成。
+
+阅读时可以在编辑器里同时打开本文和对应文件。建议顺序：`main.ts` → `express-app.ts` → `chat-service.ts` → `model.ts` → `tool-registry.ts` → `tool.ts` → `session.ts`。
 
 ## 1. 我们已经做出了什么
 
@@ -18,7 +27,7 @@
 ```mermaid
 flowchart TD
     CLI["main.ts：终端输入"] --> SERVICE["chat-service.ts：聊天业务"]
-    HTTP["server.ts → http-server.ts：HTTP 请求"] --> SERVICE
+    HTTP["express-server.ts → express-app.ts：HTTP 请求"] --> SERVICE
     SERVICE --> LOAD["session.ts：读取会话"]
     SERVICE --> MODEL["model.ts：模型请求与 Agent 循环"]
     MODEL --> API["外部模型 API"]
@@ -36,8 +45,8 @@ flowchart TD
 | 文件 | 主要职责 | 重点函数或类型 |
 | --- | --- | --- |
 | [lesson/main.ts](./lesson/main.ts) | 读取键盘输入、处理终端命令、打印流式内容 | `main` |
-| [lesson/server.ts](./lesson/server.ts) | 创建 HTTP 服务并监听端口 | `createApiServer` 的调用、`listen` |
-| [lesson/http-server.ts](./lesson/http-server.ts) | 路由、正文解析、HTTP 响应和错误转换 | `createApiServer`、`handle`、`readJsonBody`、`sendJson` |
+| [lesson/archive/server.ts](./lesson/archive/server.ts) | 创建 HTTP 服务并监听端口 | `createApiServer` 的调用、`listen` |
+| [lesson/archive/http-server.ts](./lesson/archive/http-server.ts) | 路由、正文解析、HTTP 响应和错误转换 | `createApiServer`、`handle`、`readJsonBody`、`sendJson` |
 | [lesson/chat-service.ts](./lesson/chat-service.ts) | 创建/读取会话、组织一轮聊天、并发控制 | `createChatService`、`chat` |
 | [lesson/model.ts](./lesson/model.ts) | 调用模型、消费流、处理工具调用循环 | `requestModel` |
 | [lesson/tool-registry.ts](./lesson/tool-registry.ts) | 根据名字分派工具，统一封装执行结果 | `createToolRegistry`、`executeTool` |
@@ -46,7 +55,7 @@ flowchart TD
 | [lesson/messages.ts](./lesson/messages.ts) | 消息类型与早期练习的数组辅助函数 | `Message`、`formatMessages` |
 | [lesson/errors.ts](./lesson/errors.ts) | 带状态码和业务错误码的异常 | `AppError` |
 
-`lesson/archive/` 是早期练习，不在当前聊天调用链中。`server.ts` 前面保留的注释也是旧练习，实际执行的是文件底部的启动代码。
+`lesson/archive/` 保存早期练习和原生 HTTP 服务，不在当前 Express 聊天调用链中。`server.ts` 前面保留的注释也是旧练习，实际执行的是文件底部的启动代码。
 
 ## 3. 先理解程序传递的数据
 
@@ -147,10 +156,10 @@ conversation = result.conversation;
 
 ## 5. 入口二：HTTP 请求如何进入应用
 
-对应 [server.ts](./lesson/server.ts) 和 [http-server.ts](./lesson/http-server.ts)。
+对应 [server.ts](./lesson/archive/server.ts) 和 [http-server.ts](./lesson/archive/http-server.ts)。
 
 ```bash
-node --env-file=.env lesson/server.ts
+node --env-file=.env lesson/archive/server.ts
 ```
 
 `server.ts` 调用 `createApiServer()` 得到服务器对象，然后监听 `127.0.0.1:3000`。构造服务器和监听端口分开，方便测试时传入模拟服务或使用其他端口。
@@ -513,3 +522,17 @@ HTML 输入框 → 点击按钮 → 浏览器 fetch /api/echo → 页面展示�
 之后将 echo 换成创建会话和聊天接口，再添加消息列表、等待状态、错误提示、流式文本与工具事件、会话恢复、取消生成。
 
 这些新入口可以继续使用 `chat-service.ts`。它不依赖终端显示方式，这正是我们先抽出共享业务层的实际收益。
+
+
+## 15. 当前网页入口（2026-10-21）
+
+前端由助手实现，用户后续重点学习后端。`public/index.html` 提供侧栏会话列表、消息区域和输入框，`style.css` 负责响应式布局，`app.js` 负责浏览器状态与 API 调用。
+
+1. 启动页面时读取 localStorage 中的最近会话 ID，通过 GET 接口加载服务器历史。浏览器只存列表和选择状态，不保存密钥。
+2. 首次发送时先 POST 创建会话，再 POST 聊天；也可以点击新建、选择列表中的会话或粘贴 ID 打开。
+3. 生成期间锁定发送和会话切换，显示等待状态；后端成功返回后显示完整回复。
+4. 失败时保留输入，重新读取服务器历史核对保存结果；历史也无法读取时，先要求刷新再发送，不自动重试模型请求。
+5. 最近列表只记录当前浏览器访问过的最多 50 个会话，不代表服务器全部会话。
+6. 助手正文使用 Marked 解析 Markdown，再经 DOMPurify 标签/属性白名单清理后显示；用户消息仍用 textContent。支持标题、列表、引用、表格及代码块，代码块暂未做语法高亮。Enter 发送，Shift+Enter 换行，输入法组合期间不触发发送。
+
+验证：`node --test test/*.test.mjs`，其中 HTTP 测试需要本机监听端口权限。新增 frontend.test.mjs 使用最小 DOM 替身验证发送、重复提交保护、刷新恢复、失败保留输入、切换与文本显示。未进行真实浏览器视觉验证，也未通过测试调用真实模型。流式事件、工具面板和取消请求仍待实现。

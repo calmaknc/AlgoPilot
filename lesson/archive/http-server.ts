@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { AppError } from './errors.ts';
-import { createChatService, type ChatService } from './chat-service.ts';
+import { AppError } from '../errors.ts';
+import { createChatService, type ChatService } from '../chat-service.ts';
 
 export const MAX_BODY_BYTES = 64 * 1024;
 
