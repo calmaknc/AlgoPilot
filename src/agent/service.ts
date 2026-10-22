@@ -1,7 +1,7 @@
 import type { Message } from './messages.ts';
-import type { Conversation } from './session.ts';
-import { createConversation, loadConversation, saveConversation } from './session.ts';
-import { AppError } from './errors.ts';
+import type { Conversation } from '../storage/conversations.ts';
+import { createConversation, loadConversation, saveConversation } from '../storage/conversations.ts';
+import { AppError } from '../shared/errors.ts';
 
 export type ChatCallbacks = {
     onChunk?: (text: string) => void;
@@ -25,7 +25,7 @@ export function createChatService(options: { directory?: URL; runModel?: ModelRu
     // 测试时可以传入临时目录和模拟模型，避免修改真实历史或支付 API 费用。
     const directory = options.directory;
     const runModel: ModelRunner = options.runModel ?? (async (...args) => {
-        const { requestModel } = await import('./model.ts');
+        const { requestModel } = await import('./runner.ts');
         return requestModel(...args);
     });
 

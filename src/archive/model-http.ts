@@ -1,4 +1,4 @@
-import type { Message } from "../messages.ts";
+import type { Message } from "../agent/messages.ts";
 
 type ChatResponse = {
     choices?: {

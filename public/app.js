@@ -73,6 +73,13 @@ function addMessage(role, content) {
     label.textContent = role === 'user' ? '你' : role === 'system' ? '系统' : '刷题助手';
     const body = document.createElement('div');
     body.className = 'message-body';
+    renderBody(body, role, content);
+    article.append(label, body);
+    messages.append(article);
+    messages.scrollTop = messages.scrollHeight;
+    return body;
+}
+function renderBody(body, role, content) {
     if (role === 'assistant' && globalThis.marked && globalThis.DOMPurify) {
         const html = globalThis.marked.parse(content, { gfm: true, async: false });
         // Markdown 解析不负责安全清理，只允许文本排版所需的标签和属性。
@@ -89,9 +96,6 @@ function addMessage(role, content) {
         // 用户输入保持原样；渲染库未加载时也可以阅读纯文本。
         body.textContent = content;
     }
-    article.append(label, body);
-    messages.append(article);
-    messages.scrollTop = messages.scrollHeight;
 }
 function renderMessages() {
     messages.replaceChildren();
@@ -128,8 +132,76 @@ async function request(path, body) {
     }
     return data;
 }
+// 一次 read 不等于一个事件：网络可能拆分 UTF-8 字符和 JSON 行。
+async function requestStream(body, onEvent) {
+    const response = await fetch('/api/chat/stream', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error?.message ?? `请求失败：${response.status}`);
+    }
+    if (!response.body || !response.headers.get('content-type')?.includes('application/x-ndjson')) {
+        throw new Error('服务器未返回聊天事件流，请重启后端');
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    try {
+        while (true) {
+            const { value, done } = await reader.read();
+            buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+            let newline;
+            while ((newline = buffer.indexOf('\n')) >= 0) {
+                const line = buffer.slice(0, newline).trim();
+                buffer = buffer.slice(newline + 1);
+                if (!line) continue;
+                const event = JSON.parse(line);
+                if (event.type === 'error') throw new Error(event.message);
+                if (event.type === 'done') {
+                    if (event.conversationId !== body.conversationId || typeof event.reply !== 'string') {
+                        throw new Error('结束事件不合法');
+                    }
+                    return event;
+                }
+                if (event.type === 'delta' && typeof event.text !== 'string') throw new Error('文本事件不合法');
+                onEvent(event);
+            }
+            if (buffer.length > 2 * 1024 * 1024) throw new Error('流事件超过大小限制');
+            if (done) throw new Error('连接提前结束，未收到保存成功确认');
+        }
+    } finally {
+        await reader.cancel().catch(() => {});
+        reader.releaseLock();
+    }
+}
+function clearTools() {
+    $('#tool-events').replaceChildren();
+    $('#tool-panel').hidden = true;
+}
+function showTool(event) {
+    $('#tool-panel').hidden = false;
+    const card = document.createElement('details');
+    card.className = 'tool-card';
+    const heading = document.createElement('summary');
+    let description = '已返回结果';
+    try {
+        const output = JSON.parse(event.output);
+        if (output.ok === false) description = '调用失败';
+        else if (event.name === 'run_python') description = output.executionSucceeded ? '程序正常退出' : `执行未成功：${output.status ?? '未知状态'}`;
+    } catch { description = '已返回结果'; }
+    heading.textContent = `${event.name} · ${description}`;
+    const detail = document.createElement('pre');
+    const pretty = value => { try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return String(value); } };
+    detail.textContent = `参数\n${pretty(event.argumentsJson)}\n\n结果\n${pretty(event.output)}`;
+    card.append(heading, detail);
+    $('#tool-events').append(card);
+    setStatus(`工具 ${event.name} 已返回，正在继续生成…`);
+}
 const loadConversation = (id) => request(`/api/conversations/${encodeURIComponent(id)}`);
 function acceptConversation(conversation) {
+    clearTools();
     current = conversation;
     needsSync = false;
     remember(current);
@@ -188,27 +260,47 @@ form.addEventListener('submit', async event => {
     setBusy(true);
     setStatus('正在发送，请等待本轮完成…');
     let submitted = false;
+    let renderTimer;
+    clearTools();
     try {
         if (!current) acceptConversation(await request('/api/conversations', {}));
         if (!current.messages.length) messages.replaceChildren();
         addMessage('user', message);
         $('#pending').hidden = false;
         submitted = true;
-        const data = await request('/api/chat', { conversationId: current.id, message });
-        // POST 成功说明后端已保存；先显示结果，不因后续刷新失败丢失回答。
+        const answer = addMessage('assistant', '');
+        let partial = '';
+        const data = await requestStream({ conversationId: current.id, message }, event => {
+            if (event.type === 'delta') {
+                partial += event.text;
+                $('#pending').hidden = true;
+                setStatus('正在生成…');
+                // 合并高频片段，减少重复 Markdown 渲染。
+                if (!renderTimer) renderTimer = setTimeout(() => {
+                    renderTimer = undefined;
+                    renderBody(answer, 'assistant', partial);
+                    messages.scrollTop = messages.scrollHeight;
+                }, 40);
+            } else if (event.type === 'tool') showTool(event);
+        });
+        if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
         current.messages.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply });
-        if (current.title === '新会话') current.title = message.slice(0, 30);
+        current.title = data.title ?? current.title;
         remember(current);
         renderMessages();
         input.value = '';
         readyStatus('回答已保存。');
     } catch (error) {
+        if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
         let note = '';
         if (submitted) {
             // 网络/存储报错时，写入可能已经成功，重新读取服务器记录。
             try {
-                acceptConversation(await loadConversation(current.id));
-                note = ' 已重新读取历史；请先核对记录再重试。';
+                current = await loadConversation(current.id);
+                needsSync = false;
+                remember(current);
+                renderMessages();
+                note = ' 已重新读取历史；连接中断时后端可能仍在处理，请稍后刷新核对，勿立即重复提交。';
             } catch {
                 needsSync = true;
                 renderMessages();

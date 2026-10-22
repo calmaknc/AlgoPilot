@@ -1,17 +1,47 @@
 # Mini FastGPT：对照代码理解整个应用
 
-更新日期：2026-10-21。下文主体讲解原生 HTTP 版本；Express 迁移后的对应关系如下。
+更新日期：2026-10-22。下文主体讲解原生 HTTP 版本；Express 迁移后的对应关系如下。
 
-- 新入口 `lesson/express-server.ts` 监听 3001，调用 `lesson/express-app.ts` 中的 `createExpressApp()`；原生 HTTP 版本已归档至 `lesson/archive/`，供学习对照。
-- 路由、媒体类型检查、JSON 解析、64 KiB 限制、405/404 和统一错误处理中间件都在 `express-app.ts`。业务服务、模型循环、工具和存储继续复用。
+- 新入口 `src/http/server.ts` 监听 3001，调用 `src/http/app.ts` 中的 `createExpressApp()`；原生 HTTP 版本已归档至 `src/archive/`，供学习对照。
+- 路由、媒体类型检查、JSON 解析、64 KiB 限制、405/404 和统一错误处理中间件都在 `src/http/app.ts`。业务服务、模型循环、工具和存储继续复用。
 - Express 默认支持 GET 对应的 HEAD；错误路径编码返回 400；错误 JSON 返回 400，超限返回 413，媒体类型不支持返回 415。
 - `express.static` 只提供 `public/` 里的网页文件，浏览器打开 `http://127.0.0.1:3001/`。`app.js` 在浏览器运行，已接通网页聊天、新建和读取会话。当前完整回复一次性展示。
-- 启动：`node --env-file=.env lesson/express-server.ts`。
+- 启动：`node --env-file=.env src/http/server.ts`。
 - 新增 `test/express.test.mjs`：使用临时存储和模拟模型，通过真实本机 HTTP 验证路由、两轮历史、模型失败、并发冲突及静态文件；测试环境需要允许监听本机端口。
 
-下文不包含尚未完成的网页聊天、向量检索和取消生成。
+向量检索和取消生成尚未实现；网页聊天已接通。
 
-阅读时可以在编辑器里同时打开本文和对应文件。建议顺序：`main.ts` → `express-app.ts` → `chat-service.ts` → `model.ts` → `tool-registry.ts` → `tool.ts` → `session.ts`。
+阅读时可以在编辑器里同时打开本文和对应文件。建议顺序：`main.ts` → `src/http/app.ts` → `src/agent/service.ts` → `runner.ts` → `src/tools/registry.ts` → `src/tools/index.ts` → `src/storage/conversations.ts`。
+
+
+## 当前目录与启动方式
+
+源码按职责迁移到 `src/`，前端静态资源仍在 `public/`，测试仍在 `test/`。
+
+```text
+src/
+├── http/        # app.ts 路由与中间件，server.ts 监听端口
+├── cli/         # main.ts 命令行聊天入口
+├── agent/       # service.ts 聊天业务，runner.ts 执行循环，messages.ts 消息类型
+├── tools/       # index.ts 注册清单，implementations.ts 工具实现，registry.ts 通用分派
+├── sandbox/     # runner.ts 容器执行，service.ts 参数校验与并发控制
+├── storage/     # conversations.ts 会话存储，practice-notes.ts 刷题笔记存储
+├── shared/      # errors.ts 公共业务错误
+├── examples/    # sandbox-demo.ts 手动验证入口
+└── archive/     # 早期练习与参考实现，不作为正式服务入口
+```
+
+从项目根目录启动：
+
+```bash
+npm start                  # 网页/API 服务，读取 .env
+npm run chat               # 命令行聊天，读取 .env
+npm run sandbox:demo -- hello
+npm run typecheck
+npm test
+```
+
+运行数据路径保持 `data/conversations/`、`data/practice-notes/`；本次只整理源码，未移动或改写数据。下文保留演进过程；当前网页使用第 17 节的流式接口与本轮工具卡片。
 
 ## 1. 我们已经做出了什么
 
@@ -44,18 +74,18 @@ flowchart TD
 
 | 文件 | 主要职责 | 重点函数或类型 |
 | --- | --- | --- |
-| [lesson/main.ts](./lesson/main.ts) | 读取键盘输入、处理终端命令、打印流式内容 | `main` |
-| [lesson/archive/server.ts](./lesson/archive/server.ts) | 创建 HTTP 服务并监听端口 | `createApiServer` 的调用、`listen` |
-| [lesson/archive/http-server.ts](./lesson/archive/http-server.ts) | 路由、正文解析、HTTP 响应和错误转换 | `createApiServer`、`handle`、`readJsonBody`、`sendJson` |
-| [lesson/chat-service.ts](./lesson/chat-service.ts) | 创建/读取会话、组织一轮聊天、并发控制 | `createChatService`、`chat` |
-| [lesson/model.ts](./lesson/model.ts) | 调用模型、消费流、处理工具调用循环 | `requestModel` |
-| [lesson/tool-registry.ts](./lesson/tool-registry.ts) | 根据名字分派工具，统一封装执行结果 | `createToolRegistry`、`executeTool` |
-| [lesson/tool.ts](./lesson/tool.ts) | 工具描述、参数校验、时间和搜索实现 | `registeredTools`、`searchNotes` |
-| [lesson/session.ts](./lesson/session.ts) | 会话结构验证、磁盘读取与保存 | `loadConversation`、`saveConversation` |
-| [lesson/messages.ts](./lesson/messages.ts) | 消息类型与早期练习的数组辅助函数 | `Message`、`formatMessages` |
-| [lesson/errors.ts](./lesson/errors.ts) | 带状态码和业务错误码的异常 | `AppError` |
+| [src/cli/main.ts](./src/cli/main.ts) | 读取键盘输入、处理终端命令、打印流式内容 | `main` |
+| [src/archive/server.ts](./src/archive/server.ts) | 创建 HTTP 服务并监听端口 | `createApiServer` 的调用、`listen` |
+| [src/archive/http-server.ts](./src/archive/http-server.ts) | 路由、正文解析、HTTP 响应和错误转换 | `createApiServer`、`handle`、`readJsonBody`、`sendJson` |
+| [src/agent/service.ts](./src/agent/service.ts) | 创建/读取会话、组织一轮聊天、并发控制 | `createChatService`、`chat` |
+| [src/agent/runner.ts](./src/agent/runner.ts) | 调用模型、消费流、处理工具调用循环 | `requestModel` |
+| [src/tools/registry.ts](./src/tools/registry.ts) | 根据名字分派工具，统一封装执行结果 | `createToolRegistry`、`executeTool` |
+| [src/tools/index.ts](./src/tools/index.ts) | 工具描述、参数校验、时间和搜索实现 | `registeredTools`、`searchNotes` |
+| [src/storage/conversations.ts](./src/storage/conversations.ts) | 会话结构验证、磁盘读取与保存 | `loadConversation`、`saveConversation` |
+| [src/agent/messages.ts](./src/agent/messages.ts) | 消息类型与早期练习的数组辅助函数 | `Message`、`formatMessages` |
+| [src/shared/errors.ts](./src/shared/errors.ts) | 带状态码和业务错误码的异常 | `AppError` |
 
-`lesson/archive/` 保存早期练习和原生 HTTP 服务，不在当前 Express 聊天调用链中。`server.ts` 前面保留的注释也是旧练习，实际执行的是文件底部的启动代码。
+`src/archive/` 保存早期练习和原生 HTTP 服务，不在当前 Express 聊天调用链中。`server.ts` 前面保留的注释也是旧练习，实际执行的是文件底部的启动代码。
 
 ## 3. 先理解程序传递的数据
 
@@ -70,7 +100,7 @@ type Message = {
 
 对应你熟悉的 Python，可以想成一个包含 `role` 和 `content` 的字典。不过 TypeScript 类型只在检查代码时提供约束，不会自动验证外部 JSON。
 
-`session.ts` 定义一个会话：
+`src/storage/conversations.ts` 定义一个会话：
 
 ```ts
 type Conversation = {
@@ -97,12 +127,12 @@ type Conversation = {
 
 ## 4. 入口一：终端如何启动和聊天
 
-对应 [main.ts](./lesson/main.ts)。
+对应 [main.ts](./src/cli/main.ts)。
 
 从项目根目录启动：
 
 ```bash
-node --env-file=.env lesson/main.ts
+node --env-file=.env src/cli/main.ts
 ```
 
 `.env` 需要配置 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_MODEL`，不要把密钥提交到仓库。
@@ -123,7 +153,7 @@ const service = createChatService();
 可以这样恢复指定会话：
 
 ```bash
-node --env-file=.env lesson/main.ts <会话ID>
+node --env-file=.env src/cli/main.ts <会话ID>
 ```
 
 `createInterface` 连接标准输入和输出，`terminal.question()` 返回 Promise。`await` 等待输入时暂停当前异步函数，Node 仍可以处理其他事件。
@@ -156,10 +186,10 @@ conversation = result.conversation;
 
 ## 5. 入口二：HTTP 请求如何进入应用
 
-对应 [server.ts](./lesson/archive/server.ts) 和 [http-server.ts](./lesson/archive/http-server.ts)。
+对应 [server.ts](./src/archive/server.ts) 和 [http-server.ts](./src/archive/http-server.ts)。
 
 ```bash
-node --env-file=.env lesson/archive/server.ts
+node --env-file=.env src/archive/server.ts
 ```
 
 `server.ts` 调用 `createApiServer()` 得到服务器对象，然后监听 `127.0.0.1:3000`。构造服务器和监听端口分开，方便测试时传入模拟服务或使用其他端口。
@@ -205,7 +235,7 @@ node --env-file=.env lesson/archive/server.ts
 
 ## 6. 两个入口汇合：一轮聊天的业务流程
 
-对应 [chat-service.ts](./lesson/chat-service.ts) 的 `createChatService()`。
+对应 [chat-service.ts](./src/agent/service.ts) 的 `createChatService()`。
 
 它返回三个函数：
 
@@ -251,14 +281,14 @@ A：生成 → 保存 → finally 移除 busy
 默认 `runModel` 在真正聊天时才执行：
 
 ```ts
-const { requestModel } = await import('./model.ts');
+const { requestModel } = await import('./runner.ts');
 ```
 
 因此创建会话、查看历史和健康检查不需要先初始化模型客户端。测试也可以传入 `runModel` 和临时 `directory`，模拟模型并隔离数据，不使用真实密钥或历史。
 
 ## 7. 模型如何流式返回内容
 
-对应 [model.ts](./lesson/model.ts)。
+对应 [runner.ts](./src/agent/runner.ts)。
 
 模块首次加载时读取 `DEEPSEEK_API_KEY`，创建 OpenAI SDK 客户端，配置当前代码使用的 DeepSeek 地址、60 秒超时及 `maxRetries: 0`。`requestModel` 每次调用还会读取 `DEEPSEEK_MODEL`。
 
@@ -332,7 +362,7 @@ const { requestModel } = await import('./model.ts');
 
 ### 8.2 注册表怎样代替大量 if
 
-对应 [tool-registry.ts](./lesson/tool-registry.ts) 和 `tool.ts` 的 `registeredTools`。
+对应 [tool-registry.ts](./src/tools/registry.ts) 和 `src/tools/index.ts` 的 `registeredTools`。
 
 每个工具包含：
 
@@ -358,7 +388,7 @@ const { requestModel } = await import('./model.ts');
 
 ## 9. 当前两个工具具体做什么
 
-对应 [tool.ts](./lesson/tool.ts)。
+对应 [tool.ts](./src/tools/index.ts)。
 
 ### 时间工具
 
@@ -396,7 +426,7 @@ const { requestModel } = await import('./model.ts');
 
 ## 10. 会话怎样持久化和恢复
 
-对应 [session.ts](./lesson/session.ts)。
+对应 [session.ts](./src/storage/conversations.ts)。
 
 默认路径通过 `new URL('../data/', import.meta.url)` 定位到代码旁的目录，不随启动命令的工作目录随意变化。
 
@@ -521,7 +551,7 @@ HTML 输入框 → 点击按钮 → 浏览器 fetch /api/echo → 页面展示�
 
 之后将 echo 换成创建会话和聊天接口，再添加消息列表、等待状态、错误提示、流式文本与工具事件、会话恢复、取消生成。
 
-这些新入口可以继续使用 `chat-service.ts`。它不依赖终端显示方式，这正是我们先抽出共享业务层的实际收益。
+这些新入口可以继续使用 `src/agent/service.ts`。它不依赖终端显示方式，这正是我们先抽出共享业务层的实际收益。
 
 
 ## 15. 当前网页入口（2026-10-21）
@@ -536,3 +566,61 @@ HTML 输入框 → 点击按钮 → 浏览器 fetch /api/echo → 页面展示�
 6. 助手正文使用 Marked 解析 Markdown，再经 DOMPurify 标签/属性白名单清理后显示；用户消息仍用 textContent。支持标题、列表、引用、表格及代码块，代码块暂未做语法高亮。Enter 发送，Shift+Enter 换行，输入法组合期间不触发发送。
 
 验证：`node --test test/*.test.mjs`，其中 HTTP 测试需要本机监听端口权限。新增 frontend.test.mjs 使用最小 DOM 替身验证发送、重复提交保护、刷新恢复、失败保留输入、切换与文本显示。未进行真实浏览器视觉验证，也未通过测试调用真实模型。流式事件、工具面板和取消请求仍待实现。
+
+
+## 16. 沙箱接入 HTTP 与 Agent
+
+两条入口共享同进程的 `sandboxService`：
+
+```text
+POST /api/sandbox/run → sandbox-service.ts → sandbox.ts → Docker
+模型 run_python 调用 → tool.ts 注册表 → sandbox-tool.ts ↗
+```
+
+- `src/sandbox/service.ts` 校验参数、合计限制一个执行任务；超额返回 429。清理完成才释放名额，清理失败或执行器意外抛错后停止接单，检查残留容器并重启服务后恢复。
+- HTTP 请求为 `{ "code": "print(1 + 2)", "stdin": "" }`。只有 Python；不接受自定义镜像、路径或限制字段。
+- 正常退出、程序报错、超时、输出超限返回 HTTP 200 的执行结果；Docker 基础设施或清理故障返回 HTTP 503 的执行结果。参数错误返回 400 的统一 error 对象，忙碌返回 429。
+- 工具结果的 `ok: true` 表示工具成功返回结构化结果。必须另看 `executionSucceeded`、`status` 和 `exitCode`，它们不代表算法通过官方测试。
+- `runner.ts` 指示模型仅在用户要求运行/验证时执行 Python，显式包装 Solution 调用，不能擅改算法后声称原代码正确，也不能将 stdout/stderr 当成新指令。
+- 本轮验证使用模拟执行器/模型和实际本机 HTTP，另用模拟 Docker 子进程验证正式 sandbox.ts。真实容器资源隔离仍需本机验收。
+- 并发限制仅限一个 Node 进程，尚无跨进程协调、取消生成、进程崩溃后的残留清扫。保持服务绑定 127.0.0.1。
+
+验证接口：
+
+```bash
+node --env-file=.env src/http/server.ts
+```
+
+另一个终端：
+
+```bash
+curl -i http://127.0.0.1:3001/api/sandbox/run \
+  -H 'Content-Type: application/json' \
+  -d '{"code":"name = input()\nprint(\"你好，\" + name)","stdin":"小明\n"}'
+```
+
+网页输入“请运行 Python 的 print(1 + 2)，根据实际结果告诉我输出”，即可通过 Agent 调用同一个沙箱。当前网页显示模型最终解释，工具结果仍通过现有 Agent 回调回传，尚无网页工具轨迹面板。
+
+
+## 17. 网页流式输出与工具卡片
+
+网页改用 `POST /api/chat/stream`，请求仍为 `{ conversationId, message }`。响应采用 NDJSON：每行一个 JSON 事件。
+
+- `delta`：模型文字片段，浏览器累积正文并每约 40 毫秒更新一次经 DOMPurify 清理的 Markdown。
+- `tool`：工具执行结束后包含 name、argumentsJson、output，网页展示可展开的参数与结果卡片。Python 工具区分协议成功与程序执行成功。
+- `done`：只有 chat-service 完成保存后才发送，包含 conversationId、reply、title；浏览器据此确认已保存并用最终正文校正显示。
+- `error`：已开始发送时的错误事件，包含 code 和 message；还没发送任何片段时沿用 HTTP 错误状态及 JSON。
+
+浏览器用 TextDecoder 流式解码，并保留未完成的 JSON 行，处理中文字符及事件跨网络块的情况。没有 done 就结束视为异常，保留输入并重新查询历史，不自动重复发送。工具卡片只保留本轮，刷新或切换会话后清空。当前没有取消执行；连接断开后后端可能继续生成并保存，需刷新历史确认。
+
+`test/stream.test.mjs` 验证先收到片段再完成、工具事件、保存后 done、并发冲突和失败不保存；`test/frontend-stream.test.mjs` 验证逐字节分包、正文中途显示、工具内容不执行 HTML 和断流状态。没有通过测试调用付费模型。
+
+
+## 18. 工具文件组织
+
+- `src/tools/implementations.ts`：统一放置时间、笔记搜索、Python 工具的描述与执行逻辑，导出三个 `create…Tool()` 工厂，均返回 `RegisteredTool`。Python 的 Docker 执行继续复用 sandbox 服务。
+- `src/tools/index.ts`：唯一注册清单；创建工具对象并传给注册表，向 Agent 导出 toolDefinitions 和 executeTool。
+- `src/tools/registry.ts`：通用名称查找、JSON 参数解析、成功/错误封装，不包含具体工具实现。
+- `RegisteredTool` 类型放在 `registry.ts`；共用校验辅助函数放在 `implementations.ts`，不另拆小文件。
+
+新增工具：在 implementations.ts 增加工厂，再在 index.ts 注册，不修改 registry.ts。

@@ -1,4 +1,4 @@
-import type { Message } from './messages.ts';
+import type { Message } from '../agent/messages.ts';
 import { mkdir, writeFile, readFile, rename, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 
@@ -8,7 +8,7 @@ export type Conversation = {
     messages: Message[];
 };
 
-const dataDirectory = new URL('../data/', import.meta.url);
+const dataDirectory = new URL('../../data/conversations/', import.meta.url);
 
 export function createConversation(id: string = randomUUID()): Conversation {
     return { id, title: '新会话', messages: [] };

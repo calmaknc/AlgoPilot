@@ -31,7 +31,7 @@ function setup(fetch, storage = new Map()) {
         return nodes.get(id);
     };
     vm.runInNewContext(source, {
-        document: { querySelector: get, createElement: () => new Element() }, fetch,
+        document: { querySelector: get, createElement: () => new Element() }, fetch, TextDecoder, setTimeout, clearTimeout,
         localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     });
     return { get, storage };
@@ -52,7 +52,7 @@ test('网页：新建、发送、禁止重复提交、恢复、错误保留输�
             conversations.set(value.id, value);
             return response(value, 201);
         }
-        if (path === '/api/chat') {
+        if (path === '/api/chat/stream') {
             calls++;
             const body = JSON.parse(options.body);
             if (hold) { entered(); await hold; }
@@ -60,7 +60,7 @@ test('网页：新建、发送、禁止重复提交、恢复、错误保留输�
             const value = conversations.get(body.conversationId);
             value.messages.push({ role: 'user', content: body.message }, { role: 'assistant', content: '<script>unsafe()</script>' });
             value.title = body.message.slice(0, 30);
-            return response({ conversationId: value.id, reply: '<script>unsafe()</script>' });
+            return new Response(JSON.stringify({ type: 'delta', text: '<script>unsafe()</script>' }) + '\n' + JSON.stringify({ type: 'done', conversationId: value.id, title: value.title, reply: '<script>unsafe()</script>' }) + '\n', { headers: { 'Content-Type': 'application/x-ndjson' } });
         }
         if (readsFail) throw new Error('网络错误');
         return response(conversations.get(path.split('/').at(-1)));

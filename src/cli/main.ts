@@ -1,10 +1,10 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
-import { formatMessages } from './messages.ts'
-import { saveConversation, loadLastConversation } from './session.ts';
-import type {Conversation} from './session.ts'
-import { createChatService } from './chat-service.ts';
+import { formatMessages } from '../agent/messages.ts'
+import { saveConversation, loadLastConversation } from '../storage/conversations.ts';
+import type {Conversation} from '../storage/conversations.ts'
+import { createChatService } from '../agent/service.ts';
 
 async function main(): Promise<void> {
     const service = createChatService();

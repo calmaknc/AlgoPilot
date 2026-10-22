@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createToolRegistry } from '../lesson/tool-registry.ts';
+import { createToolRegistry } from '../src/tools/registry.ts';
 
 function define(name, execute) {
     return {

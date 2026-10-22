@@ -1,4 +1,4 @@
-import { createExpressApp } from './express-app.ts';
+import { createExpressApp } from './app.ts';
 
 const app = createExpressApp();
 const server = app.listen(3001, '127.0.0.1', () => {

@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createConversation, loadConversation, loadLastConversation, saveConversation } from '../lesson/session.ts';
+import { createConversation, loadConversation, loadLastConversation, saveConversation } from '../src/storage/conversations.ts';
 
 test('会话保存、重新加载、切换、损坏与写入失败', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'mini-fastgpt-session-'));

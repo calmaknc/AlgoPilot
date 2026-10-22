@@ -30,6 +30,11 @@
             </header>
             <section id="messages" class="messages" aria-label="聊天记录" tabindex="0"></section>
             <div id="pending" class="pending" role="status" hidden><span class="dot"></span>正在生成回答，请稍候…</div>
+            <section id="tool-panel" class="tool-panel" aria-label="本轮工具记录" hidden>
+                <h2>本轮调用的工具</h2>
+                <p>执行结束后显示结果；刷新或切换会话后清空。</p>
+                <div id="tool-events"></div>
+            </section>
             <footer class="composer">
                 <p id="status" role="status" aria-live="polite">正在加载…</p>
                 <form id="message-form">
@@ -37,7 +42,7 @@
                     <textarea id="message-input" rows="3" maxlength="10000" placeholder="粘贴题目描述、你的思路或代码，告诉我卡在哪里…" required></textarea>
                     <div class="composer-bottom"><span>Enter 发送 · Shift + Enter 换行</span><button id="send-button" class="primary" type="submit">发送消息 ↑</button></div>
                 </form>
-                <p class="disclaimer">可以讨论思路、分析代码与复杂度；代码尚未实际运行，请自行验证。</p>
+                <p class="disclaimer">可请求运行 Python 代码；执行结果仅针对提供的用例，不代表通过官方完整测试。</p>
             </footer>
         </main>
     </div>

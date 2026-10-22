@@ -4,8 +4,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createExpressApp } from '../lesson/express-app.ts';
-import { createChatService } from '../lesson/chat-service.ts';
+import { createExpressApp } from '../src/http/app.ts';
+import { createChatService } from '../src/agent/service.ts';
 
 test('Express 路由、错误响应、会话与网页', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'mini-express-'));

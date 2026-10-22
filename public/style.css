@@ -14,3 +14,4 @@
 .markdown th,.markdown td{border:1px solid #d4e0d8;padding:9px 13px;text-align:left;min-width:80px}
 .markdown th{background:#edf4ef;font-weight:650}.markdown a{color:#216d50;text-decoration:underline;text-underline-offset:3px}
 .markdown hr{border:0;border-top:1px solid #d4e0d8;margin:1.5em 0}
+.tool-panel{padding:10px 32px;background:#f0f5f2;border-top:1px solid #dce6df;max-height:220px;overflow:auto;flex-shrink:0}.tool-panel h2{font-size:13px;margin:0 0 5px}.tool-panel>p{font-size:11px;color:#6d8074;margin:0 0 8px}.tool-card{background:white;border:1px solid #d4e0d8;border-radius:8px;margin-top:7px;padding:9px 12px}.tool-card summary{cursor:pointer;font-size:13px;color:#285a43}.tool-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6;max-height:220px;overflow:auto}.tool-panel[hidden]{display:none}

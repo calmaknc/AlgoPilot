@@ -9,8 +9,8 @@ globalThis.fetch = async (url, options) => {
     assert.equal(String(url), 'https://api.deepseek.com/responses');
     return handler(JSON.parse(options.body));
 };
-const { requestModel } = await import('../lesson/model.ts');
-const { executeTool } = await import('../lesson/tool.ts');
+const { requestModel } = await import('../src/agent/runner.ts');
+const { executeTool } = await import('../src/tools/index.ts');
 
 function response(output, text = '', status = 'completed') {
     const events = [];
@@ -125,4 +125,33 @@ test('普通回答、多个工具、参数修正、轮数限制及流错误', as
         handler = () => response([], '部分文本', status);
         await assert.rejects(requestModel(messages), error);
     }
+});
+
+test('Agent 请求 Python 工具、回传 call_id 并根据执行结果回答', async () => {
+    const { sandboxService } = await import('../src/sandbox/service.ts');
+    const originalRun = sandboxService.run;
+    let calls = 0;
+    let requests = 0;
+    sandboxService.run = async args => {
+        calls++;
+        assert.deepEqual(args, { code: 'print(1 + 2)', stdin: '' });
+        return { status: 'completed', stdout: '3\n', stderr: '', exitCode: 0, durationMs: 5 };
+    };
+    try {
+        handler = body => {
+            requests++;
+            assert.ok(body.tools.some(tool => tool.name === 'run_python'));
+            if (requests === 1) return response([call('python-1', '{"code":"print(1 + 2)","stdin":""}', 'run_python')]);
+            const output = body.input.at(-1);
+            assert.equal(output.call_id, 'python-1');
+            assert.equal(output.type, 'function_call_output');
+            const data = JSON.parse(output.output);
+            assert.equal(data.executionSucceeded, true);
+            assert.equal(data.stdout, '3\n');
+            return response([], '实际输出为 3，本次运行正常结束。');
+        };
+        assert.equal(await requestModel([{ role: 'user', content: '运行 print(1 + 2)' }]), '实际输出为 3，本次运行正常结束。');
+        assert.equal(calls, 1);
+        assert.equal(requests, 2);
+    } finally { sandboxService.run = originalRun; }
 });
