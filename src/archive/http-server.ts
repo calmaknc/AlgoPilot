@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { AppError } from '../shared/errors.ts';
-import { createChatService, type ChatService } from '../agent/service.ts';
+import { createAgentService, type AgentService } from '../agent/service.ts';
 
 export const MAX_BODY_BYTES = 64 * 1024;
 
@@ -42,7 +42,7 @@ export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /** 仅构造服务，不监听端口，方便测试在随机端口启动。 */
-export function createApiServer(service: ChatService = createChatService()) {
+export function createApiServer(service: AgentService = createAgentService()) {
     const server = createServer((req, res) => {
         void handle(req, res).catch((error: unknown) => {
             const failure = error instanceof AppError
@@ -73,9 +73,9 @@ export function createApiServer(service: ChatService = createChatService()) {
         // GET /api/conversations/:id
         //   提取并解码 id，调用 service.getConversation()，返回 200。
         //
-        // POST /api/chat
+        // POST /api/agent/run
         //   正文：{ conversationId: string, message: string }
-        //   校验解析结果后调用 service.chat()。
+        //   校验解析结果后调用 service.run()。
         //   返回 200 和 { conversationId, reply }，这一阶段先不转发流。
         //
         // 同时迁移已有 /api/info 和 /api/echo，保留原有练习能力。
@@ -123,7 +123,7 @@ export function createApiServer(service: ChatService = createChatService()) {
             return;
         }
 
-        if (path === '/api/chat') {
+        if (path === '/api/agent/run') {
             if (req.method !== 'POST') {
                 res.setHeader('Allow', 'POST');
                 throw new AppError(405, 'METHOD_NOT_ALLOWED', '此接口需要post请求');
@@ -143,7 +143,7 @@ export function createApiServer(service: ChatService = createChatService()) {
                 throw new AppError(400, 'INVALID_MESSAGE', 'message必须是字符串');
             }
 
-            const result = await service.chat(body.conversationId, body.message);
+            const result = await service.run(body.conversationId, body.message);
             sendJson(res, 200, {conversationId: result.conversationId, reply: result.reply});
             return;
         }
@@ -153,7 +153,7 @@ export function createApiServer(service: ChatService = createChatService()) {
                 res.setHeader('Allow', 'GET');
                 throw new AppError(405, 'METHOD_NOT_ALLOWED', '此接口需要GET请求');
             }
-            sendJson(res, 200, {name: 'mini-fastgpt', version: '0.1.0'});
+            sendJson(res, 200, {name: 'mini-agent', version: '0.1.0'});
             return;
         }
 
@@ -188,4 +188,4 @@ export function createApiServer(service: ChatService = createChatService()) {
     return server;
 }
 
-// server.ts 负责监听端口；main.ts 与 HTTP 路由共用聊天服务。
+// server.ts 负责监听端口；main.ts 与 HTTP 路由共用交互服务。

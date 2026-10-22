@@ -23,7 +23,7 @@
 
 //     if (req.method === 'GET' && req.url == '/api/info') {
 //         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-//         res.end(JSON.stringify({name: 'mini-fastgpt', version: '0.1.0'}));
+//         res.end(JSON.stringify({name: 'mini-agent', version: '0.1.0'}));
 //         return
 //     }
 

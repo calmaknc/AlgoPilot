@@ -3,7 +3,13 @@ const $ = (selector) => document.querySelector(selector);
 const form = $('#message-form');
 const input = $('#message-input');
 const sendButton = $('#send-button');
-const newButton = $('#new-chat');
+const stopButton = $('#stop-button');
+let activeRun = null;
+stopButton.addEventListener('click', () => {
+    activeRun?.abort();
+    stopButton.disabled = true;
+});
+const newButton = $('#new-session');
 const refreshButton = $('#refresh-history');
 const openForm = $('#open-form');
 const idInput = $('#conversation-id');
@@ -11,7 +17,7 @@ const openButton = $('#open-button');
 const messages = $('#messages');
 const status = $('#status');
 const list = $('#conversation-list');
-const storageKey = 'mini-fastgpt.sessions.v1';
+const storageKey = 'mini-agent.sessions.v1';
 const validId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(id);
 let current = null;
 let busy = false;
@@ -19,7 +25,7 @@ let needsSync = false;
 let storageAvailable = true;
 let remembered = { selected: null, sessions: [] };
 try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+    const saved = JSON.parse(localStorage.getItem(storageKey) ?? localStorage.getItem('mini-fastgpt.sessions.v1') ?? 'null');
     if (saved && Array.isArray(saved.sessions)) {
         remembered.sessions = saved.sessions.filter(item => item && validId(item.id) && typeof item.title === 'string').slice(0, 50);
         remembered.selected = validId(saved.selected) ? saved.selected : null;
@@ -99,8 +105,8 @@ function renderBody(body, role, content) {
 }
 function renderMessages() {
     messages.replaceChildren();
-    $('#chat-title').textContent = current?.title ?? '开始一次刷题讨论';
-    $('#chat-id').textContent = current ? `会话 ID：${current.id}` : '发送第一条消息时自动创建会话';
+    $('#session-title').textContent = current?.title ?? '开始一次 Agent 刷题任务';
+    $('#session-id').textContent = current ? `会话 ID：${current.id}` : '发送第一条消息时自动创建会话';
     if (!current?.messages.length) {
         const empty = document.createElement('div');
         empty.className = 'empty';
@@ -115,7 +121,19 @@ function renderMessages() {
         }
         messages.append(empty);
     } else {
-        for (const message of current.messages) addMessage(message.role, message.content);
+        for (const message of current.messages) {
+            const body = addMessage(message.role, message.content);
+            for (const call of message.toolCalls ?? []) {
+                const card = document.createElement('details');
+                card.className = 'tool-card';
+                const heading = document.createElement('summary');
+                heading.textContent = `${call.name} · 历史调用（未保存结果）`;
+                const detail = document.createElement('pre');
+                detail.textContent = call.argumentsJson;
+                card.append(heading, detail);
+                body.append(card);
+            }
+        }
     }
 }
 async function request(path, body) {
@@ -133,8 +151,9 @@ async function request(path, body) {
     return data;
 }
 // 一次 read 不等于一个事件：网络可能拆分 UTF-8 字符和 JSON 行。
-async function requestStream(body, onEvent) {
-    const response = await fetch('/api/chat/stream', {
+async function requestStream(body, onEvent, signal) {
+    const response = await fetch('/api/agent/stream', {
+        signal,
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
@@ -143,7 +162,7 @@ async function requestStream(body, onEvent) {
         throw new Error(data.error?.message ?? `请求失败：${response.status}`);
     }
     if (!response.body || !response.headers.get('content-type')?.includes('application/x-ndjson')) {
-        throw new Error('服务器未返回聊天事件流，请重启后端');
+        throw new Error('服务器未返回 Agent 事件流，请重启后端');
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -260,6 +279,8 @@ form.addEventListener('submit', async event => {
     setBusy(true);
     setStatus('正在发送，请等待本轮完成…');
     let submitted = false;
+    let answer;
+    let partial = "";
     let renderTimer;
     clearTools();
     try {
@@ -268,8 +289,10 @@ form.addEventListener('submit', async event => {
         addMessage('user', message);
         $('#pending').hidden = false;
         submitted = true;
-        const answer = addMessage('assistant', '');
-        let partial = '';
+        answer = addMessage('assistant', '');
+        activeRun = new AbortController();
+        stopButton.hidden = false;
+        stopButton.disabled = false;
         const data = await requestStream({ conversationId: current.id, message }, event => {
             if (event.type === 'delta') {
                 partial += event.text;
@@ -282,9 +305,9 @@ form.addEventListener('submit', async event => {
                     messages.scrollTop = messages.scrollHeight;
                 }, 40);
             } else if (event.type === 'tool') showTool(event);
-        });
+        }, activeRun.signal);
         if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
-        current.messages.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply });
+        current.messages.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply, toolCalls: data.toolCalls ?? [] });
         current.title = data.title ?? current.title;
         remember(current);
         renderMessages();
@@ -292,6 +315,26 @@ form.addEventListener('submit', async event => {
         readyStatus('回答已保存。');
     } catch (error) {
         if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
+        if (activeRun?.signal.aborted) {
+            if (answer) renderBody(answer, 'assistant', partial + '\n\n[已停止，内容可能不完整]');
+            try {
+                const saved = await loadConversation(current.id);
+                const completed = saved.messages.length > current.messages.length;
+                current = saved;
+                remember(current);
+                if (completed) {
+                    renderMessages();
+                    input.value = '';
+                    setStatus('取消时本轮已完成保存，已恢复服务器历史。');
+                } else {
+                    setStatus('已停止，内容可能不完整。后端正在取消并清理；若恰好开始保存，请稍后刷新历史核对。');
+                }
+            } catch {
+                needsSync = true;
+                setStatus('已停止，暂时无法核对保存状态，请刷新历史后继续。');
+            }
+            return;
+        }
         let note = '';
         if (submitted) {
             // 网络/存储报错时，写入可能已经成功，重新读取服务器记录。
@@ -309,6 +352,8 @@ form.addEventListener('submit', async event => {
         }
         setStatus(error.message + note, true);
     } finally {
+        activeRun = null;
+        stopButton.hidden = true;
         $('#pending').hidden = true;
         setBusy(false);
         input.focus();

@@ -1,27 +1,29 @@
-import type { Message } from './messages.ts';
+import type { Message, ToolCallRecord } from './messages.ts';
 import type { Conversation } from '../storage/conversations.ts';
 import { createConversation, loadConversation, saveConversation } from '../storage/conversations.ts';
 import { AppError } from '../shared/errors.ts';
 
-export type ChatCallbacks = {
+export type AgentCallbacks = {
+    signal?: AbortSignal;
     onChunk?: (text: string) => void;
     onTool?: (name: string, argumentsJson: string, output: string) => void;
 };
 
 export type ModelRunner = (
     messages: Message[],
-    onChunk?: ChatCallbacks['onChunk'],
-    onTool?: ChatCallbacks['onTool']
+    onChunk?: AgentCallbacks['onChunk'],
+    onTool?: AgentCallbacks['onTool'],
+    signal?: AbortSignal
 ) => Promise<string>;
 
-export type ChatResult = {
+export type AgentResult = {
     conversationId: string;
     reply: string;
     conversation: Conversation;
 };
 
 /** 工厂函数：把依赖和共享状态放在一个地方，终端、HTTP 和测试可复用。 */
-export function createChatService(options: { directory?: URL; runModel?: ModelRunner } = {}) {
+export function createAgentService(options: { directory?: URL; runModel?: ModelRunner } = {}) {
     // 测试时可以传入临时目录和模拟模型，避免修改真实历史或支付 API 费用。
     const directory = options.directory;
     const runModel: ModelRunner = options.runModel ?? (async (...args) => {
@@ -71,24 +73,25 @@ export function createChatService(options: { directory?: URL; runModel?: ModelRu
         
     }
 
-    async function chat(
+    async function run(
         conversationId: string,
         message: string,
-        callbacks: ChatCallbacks = {}
-    ): Promise<ChatResult> {
+        callbacks: AgentCallbacks = {}
+    ): Promise<AgentResult> {
         // TODO 3：先完成不含并发控制的基本链路。
         // 1. 校验 message，trim 后长度为 1～10000。
         // 2. 加载会话，构造“历史 + 当前用户消息”的独立请求数组。
-        // 3. await runModel(input, callbacks.onChunk, callbacks.onTool)。
+        // 3. await runModel(input, callbacks.onChunk, callbacks.onTool, callbacks.signal)。
         // 4. 模型成功且回复非空后，将一轮问答加入会话。
         // 5. 按需设置会话标题，保存后返回 { conversationId, reply, conversation }。
         // 模型失败时转换成 502，不能把半轮消息保存到历史。
-        // 保存失败应报 500，不能报告聊天已成功保存。
+        // 保存失败应报 500，不能报告交互已成功保存。
         //
         if (typeof message !== 'string' || message.trim().length < 1 || message.trim().length > 10000) {
             throw new AppError(400, 'INVALID_MESSAGE', 'message必须是长度为1～10000的字符串');
         }
 
+        callbacks.signal?.throwIfAborted();
         if (busy.has(conversationId)) {
             throw new AppError(409, 'CONVERSATION_BUSY', '当前会话正忙');
         }
@@ -100,21 +103,29 @@ export function createChatService(options: { directory?: URL; runModel?: ModelRu
                 role: 'user',
                 content: trimmedMessage,
             };
-            const input = structuredClone([...conversation.messages, userMessage]);
+            // 持久化元数据不传入模型，避免不完整的工具调用协议和额外字段。
+            const input = [...conversation.messages, userMessage].map(({ role, content }) => ({ role, content }));
+            const toolCalls: ToolCallRecord[] = [];
 
             let reply: string;
 
             try {
-                reply = await runModel(input, callbacks.onChunk, callbacks.onTool);
+                reply = await runModel(input, callbacks.onChunk, (name, argumentsJson, output) => {
+                    toolCalls.push({ name, argumentsJson });
+                    callbacks.onTool?.(name, argumentsJson, output);
+                }, callbacks.signal);
 
                 if (typeof reply !== 'string' || reply.trim().length === 0) {
                     throw new Error('模型没有返回有效文本');
                 }
             } catch {
+                callbacks.signal?.throwIfAborted();
                 throw new AppError(502, 'MODEL_ERROR', '模型调用失败，本轮未保存');
             }
+            // 保存开始前是取消边界；开始写盘后必须等待写入完成。
+            callbacks.signal?.throwIfAborted();
             conversation.messages.push(
-                userMessage, {role: 'assistant', content: reply}
+                userMessage, {role: 'assistant', content: reply, ...(toolCalls.length ? { toolCalls } : {})}
             );
             if (conversation.title === '新会话') {
                 conversation.title = trimmedMessage.slice(0, 30);
@@ -133,7 +144,7 @@ export function createChatService(options: { directory?: URL; runModel?: ModelRu
         
     }
 
-    return { newConversation, getConversation, chat };
+    return { newConversation, getConversation, run };
 }
 
-export type ChatService = ReturnType<typeof createChatService>;
+export type AgentService = ReturnType<typeof createAgentService>;

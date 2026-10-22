@@ -171,7 +171,7 @@ function parseContainerState(raw: string): { status: string; exitCode: number; e
 // 5. 一次任务 = 创建 → 启动并收集结果 → 检查状态 → 强制删除。
 export async function runPythonSandbox(value: unknown): Promise<SandboxResult> {
     const input = parseSandboxInput(value);
-    const name = `mini-fastgpt-sandbox-${randomUUID()}`;
+    const name = `mini-agent-sandbox-${randomUUID()}`;
     const startedAt = performance.now();
     const result: SandboxResult = {
         status: 'infrastructure_error', stdout: '', stderr: '', exitCode: null, durationMs: 0,
@@ -188,7 +188,7 @@ export async function runPythonSandbox(value: unknown): Promise<SandboxResult> {
         creationAttempted = true;
         const created = await dockerCommand([
             'create', '--name', name, '--pull=never',
-            '--label', 'mini-fastgpt.sandbox=true',
+            '--label', 'mini-agent.sandbox=true',
             '--interactive',
             '--network', 'none',
             '--read-only',

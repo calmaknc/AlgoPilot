@@ -31,7 +31,7 @@ function setup(fetch, storage = new Map()) {
         return nodes.get(id);
     };
     vm.runInNewContext(source, {
-        document: { querySelector: get, createElement: () => new Element() }, fetch, TextDecoder, setTimeout, clearTimeout,
+        document: { querySelector: get, createElement: () => new Element() }, fetch, TextDecoder, AbortController, setTimeout, clearTimeout,
         localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     });
     return { get, storage };
@@ -52,7 +52,7 @@ test('网页：新建、发送、禁止重复提交、恢复、错误保留输�
             conversations.set(value.id, value);
             return response(value, 201);
         }
-        if (path === '/api/chat/stream') {
+        if (path === '/api/agent/stream') {
             calls++;
             const body = JSON.parse(options.body);
             if (hold) { entered(); await hold; }
@@ -73,15 +73,18 @@ test('网页：新建、发送、禁止重复提交、恢复、错误保留输�
     await get('#message-form').fire('submit');
     assert.equal(calls, 1);
     assert.equal(get('#message-input').value, '');
-    assert.match(get('#chat-title').textContent, /第一问/);
+    assert.match(get('#session-title').textContent, /第一问/);
     const rendered = get('#messages').children.at(-1).children.at(-1);
     assert.equal(rendered.textContent, '<script>unsafe()</script>');
     assert.equal(rendered.innerHTML, undefined);
 
+    // 更名后仍可恢复旧品牌下保存的最近会话。
+    storage.set('mini-fastgpt.sessions.v1', storage.get('mini-agent.sessions.v1'));
+    storage.delete('mini-agent.sessions.v1');
     const restored = setup(fetch, storage);
     await flush();
     assert.equal(restored.get('#messages').children.length, 2);
-    assert.match(restored.get('#chat-id').textContent, /session-0/);
+    assert.match(restored.get('#session-id').textContent, /session-0/);
 
     let release;
     const started = new Promise(resolve => { entered = resolve; });
@@ -111,9 +114,9 @@ test('网页：新建、发送、禁止重复提交、恢复、错误保留输�
     await get('#refresh-history').fire('click');
     await flush();
     assert.equal(get('#send-button').disabled, false);
-    await get('#new-chat').fire('click');
-    assert.match(get('#chat-id').textContent, /session-1/);
+    await get('#new-session').fire('click');
+    assert.match(get('#session-id').textContent, /session-1/);
     await get('#conversation-list').children[1].fire('click');
     await flush();
-    assert.match(get('#chat-id').textContent, /session-0/);
+    assert.match(get('#session-id').textContent, /session-0/);
 });

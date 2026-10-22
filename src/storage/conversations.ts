@@ -37,7 +37,16 @@ function validateConversation(value: unknown, expectedId: string): asserts value
             typeof message === 'object' && message !== null &&
             'role' in message &&
             (message.role === 'user' || message.role === 'assistant' || message.role === 'system') &&
-            'content' in message && typeof message.content === 'string'
+            'content' in message && typeof message.content === 'string' &&
+            (!('toolCalls' in message) || (
+                message.role === 'assistant' && Array.isArray(message.toolCalls) &&
+                message.toolCalls.every((call: unknown) =>
+                    typeof call === 'object' && call !== null &&
+                    'name' in call && typeof call.name === 'string' && call.name.length > 0 &&
+                    'argumentsJson' in call && typeof call.argumentsJson === 'string' &&
+                    Object.keys(call).every(key => key === 'name' || key === 'argumentsJson')
+                )
+            ))
         )
     ) {
         throw new Error('会话文件结构不正确');

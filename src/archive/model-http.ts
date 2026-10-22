@@ -1,6 +1,6 @@
 import type { Message } from "../agent/messages.ts";
 
-type ChatResponse = {
+type ModelResponse = {
     choices?: {
         message?: {
             content?: string | null;
@@ -50,7 +50,7 @@ export async function requestModel(messages: Message[]): Promise<string> {
         throw new Error(`DeepSeek 请求失败：HTTP ${response.status}`);
     }
 
-    const data = (await response.json()) as ChatResponse;
+    const data = (await response.json()) as ModelResponse;
     const content = data.choices?.[0]?.message?.content;
 
     if (typeof content !== 'string' || content.trim().length === 0) {

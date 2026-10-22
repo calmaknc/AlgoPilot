@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="围绕 LeetCode 题目讨论解题思路、分析代码与复杂度，回顾刷题对话。">
-    <title>Mini FastGPT · LeetCode 刷题助手</title>
+    <meta name="description" content="LeetCode 学习 Agent：分析解题思路、检索笔记，调用沙箱验证 Python 代码。">
+    <title>Mini Agent · LeetCode 学习 Agent</title>
     <link rel="stylesheet" href="/style.css">
     <script defer src="/vendor/marked.js"></script>
     <script defer src="/vendor/purify.js"></script>
@@ -13,8 +13,8 @@
 <body>
     <div class="workspace">
         <aside class="sidebar" aria-label="会话管理">
-            <a class="brand" href="/">Mini FastGPT<span>LeetCode 刷题助手</span></a>
-            <button id="new-chat" class="primary" type="button">＋ 新建会话</button>
+            <a class="brand" href="/">Mini Agent<span>LeetCode 学习 Agent</span></a>
+            <button id="new-session" class="primary" type="button">＋ 新建会话</button>
             <div class="section-label">最近会话 <span>当前浏览器</span></div>
             <nav id="conversation-list" aria-label="最近会话"></nav>
             <form id="open-form" class="open-form">
@@ -24,11 +24,11 @@
             <p class="sidebar-note">历史保存在本地服务器。此列表仅记录你在当前浏览器打开过的会话。</p>
         </aside>
         <main>
-            <header class="chat-header">
-                <div><p class="eyebrow">思路 · 代码 · 复盘</p><h1 id="chat-title">开始一次刷题讨论</h1><p id="chat-id" class="muted">尚未选择会话</p></div>
+            <header class="agent-header">
+                <div><p class="eyebrow">思路 · 代码 · 复盘</p><h1 id="session-title">开始一次 Agent 刷题任务</h1><p id="session-id" class="muted">尚未选择会话</p></div>
                 <button id="refresh-history" type="button" disabled>刷新历史</button>
             </header>
-            <section id="messages" class="messages" aria-label="聊天记录" tabindex="0"></section>
+            <section id="messages" class="messages" aria-label="交互记录" tabindex="0"></section>
             <div id="pending" class="pending" role="status" hidden><span class="dot"></span>正在生成回答，请稍候…</div>
             <section id="tool-panel" class="tool-panel" aria-label="本轮工具记录" hidden>
                 <h2>本轮调用的工具</h2>
@@ -40,7 +40,7 @@
                 <form id="message-form">
                     <label class="sr-only" for="message-input">输入题目与解题思路</label>
                     <textarea id="message-input" rows="3" maxlength="10000" placeholder="粘贴题目描述、你的思路或代码，告诉我卡在哪里…" required></textarea>
-                    <div class="composer-bottom"><span>Enter 发送 · Shift + Enter 换行</span><button id="send-button" class="primary" type="submit">发送消息 ↑</button></div>
+                    <div class="composer-bottom"><span>Enter 发送 · Shift + Enter 换行</span><button id="stop-button" type="button" hidden>停止</button><button id="send-button" class="primary" type="submit">发送消息 ↑</button></div>
                 </form>
                 <p class="disclaimer">可请求运行 Python 代码；执行结果仅针对提供的用例，不代表通过官方完整测试。</p>
             </footer>

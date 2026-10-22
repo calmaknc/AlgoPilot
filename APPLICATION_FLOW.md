@@ -1,15 +1,15 @@
-# Mini FastGPT：对照代码理解整个应用
+# Mini Agent：对照代码理解整个应用
 
 更新日期：2026-10-22。下文主体讲解原生 HTTP 版本；Express 迁移后的对应关系如下。
 
 - 新入口 `src/http/server.ts` 监听 3001，调用 `src/http/app.ts` 中的 `createExpressApp()`；原生 HTTP 版本已归档至 `src/archive/`，供学习对照。
 - 路由、媒体类型检查、JSON 解析、64 KiB 限制、405/404 和统一错误处理中间件都在 `src/http/app.ts`。业务服务、模型循环、工具和存储继续复用。
 - Express 默认支持 GET 对应的 HEAD；错误路径编码返回 400；错误 JSON 返回 400，超限返回 413，媒体类型不支持返回 415。
-- `express.static` 只提供 `public/` 里的网页文件，浏览器打开 `http://127.0.0.1:3001/`。`app.js` 在浏览器运行，已接通网页聊天、新建和读取会话。当前完整回复一次性展示。
+- `express.static` 只提供 `public/` 里的网页文件，浏览器打开 `http://127.0.0.1:3001/`。`app.js` 在浏览器运行，已接通网页交互、新建和读取会话。网页通过 Agent 流式接口增量展示文本和工具执行结果。
 - 启动：`node --env-file=.env src/http/server.ts`。
 - 新增 `test/express.test.mjs`：使用临时存储和模拟模型，通过真实本机 HTTP 验证路由、两轮历史、模型失败、并发冲突及静态文件；测试环境需要允许监听本机端口。
 
-向量检索和取消生成尚未实现；网页聊天已接通。
+向量检索尚未实现；网页流式交互与取消执行已接通，取消流程见第 18 节。
 
 阅读时可以在编辑器里同时打开本文和对应文件。建议顺序：`main.ts` → `src/http/app.ts` → `src/agent/service.ts` → `runner.ts` → `src/tools/registry.ts` → `src/tools/index.ts` → `src/storage/conversations.ts`。
 
@@ -21,8 +21,8 @@
 ```text
 src/
 ├── http/        # app.ts 路由与中间件，server.ts 监听端口
-├── cli/         # main.ts 命令行聊天入口
-├── agent/       # service.ts 聊天业务，runner.ts 执行循环，messages.ts 消息类型
+├── cli/         # main.ts 命令行交互入口
+├── agent/       # service.ts 交互业务，runner.ts 执行循环，messages.ts 消息类型
 ├── tools/       # index.ts 注册清单，implementations.ts 工具实现，registry.ts 通用分派
 ├── sandbox/     # runner.ts 容器执行，service.ts 参数校验与并发控制
 ├── storage/     # conversations.ts 会话存储，practice-notes.ts 刷题笔记存储
@@ -35,7 +35,7 @@ src/
 
 ```bash
 npm start                  # 网页/API 服务，读取 .env
-npm run chat               # 命令行聊天，读取 .env
+npm run agent               # 命令行交互，读取 .env
 npm run sandbox:demo -- hello
 npm run typecheck
 npm test
@@ -45,18 +45,18 @@ npm test
 
 ## 1. 我们已经做出了什么
 
-这是一个面向本地技术笔记的 AI 助手。用户可以通过终端或 HTTP 接口发起多轮聊天。模型需要外部信息时，可以请求本地程序查询时间、搜索笔记；程序将工具结果交还模型，由模型组织回答。成功的一轮问答保存在 JSON 文件中。
+这是一个辅助 LeetCode 刷题的学习 Agent。用户可以通过终端或 HTTP 接口发起多轮交互。模型需要外部信息时，可以请求本地程序查询时间、搜索笔记；程序将工具结果交还模型，由模型组织回答。成功的一轮问答保存在 JSON 文件中。
 
 目前两个入口的显示方式不同：
 
 - 终端：模型生成一段，就显示一段；工具执行完后显示工具记录。
-- HTTP：等待整轮完成并保存后，一次性返回 JSON。
+- HTTP：`POST /api/agent/run` 返回完整 JSON，`POST /api/agent/stream` 增量返回事件。
 
-模型端的流式请求已经实现，但它不等于浏览器端的流式传输也已实现。
+网页使用 `POST /api/agent/stream` 接收流式文本与工具事件。
 
 ```mermaid
 flowchart TD
-    CLI["main.ts：终端输入"] --> SERVICE["chat-service.ts：聊天业务"]
+    CLI["main.ts：终端输入"] --> SERVICE["service.ts：交互业务"]
     HTTP["express-server.ts → express-app.ts：HTTP 请求"] --> SERVICE
     SERVICE --> LOAD["session.ts：读取会话"]
     SERVICE --> MODEL["model.ts：模型请求与 Agent 循环"]
@@ -77,15 +77,15 @@ flowchart TD
 | [src/cli/main.ts](./src/cli/main.ts) | 读取键盘输入、处理终端命令、打印流式内容 | `main` |
 | [src/archive/server.ts](./src/archive/server.ts) | 创建 HTTP 服务并监听端口 | `createApiServer` 的调用、`listen` |
 | [src/archive/http-server.ts](./src/archive/http-server.ts) | 路由、正文解析、HTTP 响应和错误转换 | `createApiServer`、`handle`、`readJsonBody`、`sendJson` |
-| [src/agent/service.ts](./src/agent/service.ts) | 创建/读取会话、组织一轮聊天、并发控制 | `createChatService`、`chat` |
+| [src/agent/service.ts](./src/agent/service.ts) | 创建/读取会话、组织一轮交互、并发控制 | `createAgentService`、`run` |
 | [src/agent/runner.ts](./src/agent/runner.ts) | 调用模型、消费流、处理工具调用循环 | `requestModel` |
 | [src/tools/registry.ts](./src/tools/registry.ts) | 根据名字分派工具，统一封装执行结果 | `createToolRegistry`、`executeTool` |
-| [src/tools/index.ts](./src/tools/index.ts) | 工具描述、参数校验、时间和搜索实现 | `registeredTools`、`searchNotes` |
+| [src/tools/index.ts](./src/tools/index.ts) | 工具描述、参数校验、时间和搜索实现 | `registeredTools` |
 | [src/storage/conversations.ts](./src/storage/conversations.ts) | 会话结构验证、磁盘读取与保存 | `loadConversation`、`saveConversation` |
 | [src/agent/messages.ts](./src/agent/messages.ts) | 消息类型与早期练习的数组辅助函数 | `Message`、`formatMessages` |
 | [src/shared/errors.ts](./src/shared/errors.ts) | 带状态码和业务错误码的异常 | `AppError` |
 
-`src/archive/` 保存早期练习和原生 HTTP 服务，不在当前 Express 聊天调用链中。`server.ts` 前面保留的注释也是旧练习，实际执行的是文件底部的启动代码。
+`src/archive/` 保存早期练习和原生 HTTP 服务，不在当前 Express 交互调用链中。`server.ts` 前面保留的注释也是旧练习，实际执行的是文件底部的启动代码。
 
 ## 3. 先理解程序传递的数据
 
@@ -125,7 +125,7 @@ type Conversation = {
 
 `conversationId` 决定读取哪个历史文件；`messages` 给模型提供上下文。模型不会仅凭本地会话 ID 就自动知道以前说过什么。
 
-## 4. 入口一：终端如何启动和聊天
+## 4. 入口一：终端如何启动和交互
 
 对应 [main.ts](./src/cli/main.ts)。
 
@@ -137,10 +137,10 @@ node --env-file=.env src/cli/main.ts
 
 `.env` 需要配置 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_MODEL`，不要把密钥提交到仓库。
 
-`main()` 首先创建一个聊天服务：
+`main()` 首先创建一个交互服务：
 
 ```ts
-const service = createChatService();
+const service = createAgentService();
 ```
 
 随后确定当前会话：
@@ -166,12 +166,12 @@ node --env-file=.env src/cli/main.ts <会话ID>
 | `/exit` | 跳出循环 |
 | `/history` | 重新从磁盘读取当前会话，再格式化显示 |
 | `/new` | 通过 service 创建并保存新会话，成功后切换 |
-| 其他文字 | 当作普通聊天消息 |
+| 其他文字 | 当作普通交互消息 |
 
 普通消息传给：
 
 ```ts
-const result = await service.chat(conversation.id, input, {
+const result = await service.run(conversation.id, input, {
     onChunk: (text) => { stdout.write(text); },
     onTool: (name, argumentsJson, output) => {
         // 实际代码在这里打印工具名称、参数和结果。
@@ -182,7 +182,7 @@ conversation = result.conversation;
 
 这里两个回调是终端传给业务层的“显示动作”。业务层知道何时有文本和工具结果，但不需要自己读取键盘或操作 `stdout`。这样 HTTP 才能复用同一套业务逻辑。
 
-即使失败，内层 `finally` 也会补换行；退出循环时，外层 `finally` 关闭终端接口。聊天成功时已经保存，退出时不需要再次保存旧内存对象。
+即使失败，内层 `finally` 也会补换行；退出循环时，外层 `finally` 关闭终端接口。交互成功时已经保存，退出时不需要再次保存旧内存对象。
 
 ## 5. 入口二：HTTP 请求如何进入应用
 
@@ -194,7 +194,7 @@ node --env-file=.env src/archive/server.ts
 
 `server.ts` 调用 `createApiServer()` 得到服务器对象，然后监听 `127.0.0.1:3000`。构造服务器和监听端口分开，方便测试时传入模拟服务或使用其他端口。
 
-`createApiServer()` 默认创建一个聊天服务实例。所有到达这个服务器的请求共用它，尤其共用它内部的忙碌集合。
+`createApiServer()` 默认创建一个交互服务实例。所有到达这个服务器的请求共用它，尤其共用它内部的忙碌集合。
 
 每来一个请求，Node 调用 `createServer` 的回调，传入：
 
@@ -214,7 +214,7 @@ node --env-file=.env src/archive/server.ts
 | `POST /api/echo` | `{ message }` | 200，`{ received }` |
 | `POST /api/conversations` | `{}` 或 `{ title }` | 201，会话对象 |
 | `GET /api/conversations/:id` | URL 中的会话 ID | 200，会话对象及历史 |
-| `POST /api/chat` | `{ conversationId, message }` | 200，`{ conversationId, reply }` |
+| `POST /api/agent/run` | `{ conversationId, message }` | 200，`{ conversationId, reply }` |
 
 已知路径使用错误方法返回 405，并设置 `Allow`。不存在的路径返回 404。`/api/conversations/:id` 使用正则提取 ID，再用 `decodeURIComponent` 解码，编码非法时返回 400。
 
@@ -233,21 +233,21 @@ node --env-file=.env src/archive/server.ts
 
 函数返回 `unknown`，因为合法 JSON 也可能是数字、数组或 `null`。路由还需要验证它是对象、字段存在且类型正确；service 再验证标题、消息长度和会话 ID 等业务规则。
 
-## 6. 两个入口汇合：一轮聊天的业务流程
+## 6. 两个入口汇合：一轮交互的业务流程
 
-对应 [chat-service.ts](./src/agent/service.ts) 的 `createChatService()`。
+对应 [service.ts](./src/agent/service.ts) 的 `createAgentService()`。
 
 它返回三个函数：
 
 ```ts
-return { newConversation, getConversation, chat };
+return { newConversation, getConversation, run };
 ```
 
 这些函数通过闭包共享 `directory`、`runModel` 和 `busy`。可以把它理解为：工厂函数创建了一组操作，以及这些操作共同使用的内部状态。
 
 `newConversation` 验证标题、生成 UUID、保存空会话；`getConversation` 验证 ID 并读取文件。缺失文件转换成 404，损坏文件等读取错误转换成 500。
 
-`chat(conversationId, message, callbacks)` 的执行顺序如下：
+`run(conversationId, message, callbacks)` 的执行顺序如下：
 
 1. **校验消息。** 必须是字符串，trim 后长度为 1～10000。这里的长度使用 JavaScript 字符串 `.length`。
 2. **检查并加锁。** `busy.has(id)` 为真则抛 409，否则立即 `busy.add(id)`。
@@ -256,7 +256,7 @@ return { newConversation, getConversation, chat };
 5. **等待模型。** 调用 `runModel`，把文本和工具回调传下去。
 6. **检查成功结果。** 模型调用失败或返回空白文本，抛 502，不保存这一轮。
 7. **追加完整问答。** 将 user 和 assistant 两条消息加入会话。标题仍为“新会话”时，取本次问题前 30 个字符串单位作为标题。
-8. **等待保存。** 保存失败抛 500，不能向调用者报告聊天已成功保存。
+8. **等待保存。** 保存失败抛 500，不能向调用者报告交互已成功保存。
 9. **返回结果。** 返回 `{ conversationId, reply, conversation }`。
 10. **释放锁。** 无论成功或失败，`finally` 中都会 `busy.delete(id)`。
 
@@ -278,7 +278,7 @@ A：生成 → 保存 → finally 移除 busy
 
 ### 6.2 为什么模型是延迟导入的
 
-默认 `runModel` 在真正聊天时才执行：
+默认 `runModel` 在真正交互时才执行：
 
 ```ts
 const { requestModel } = await import('./runner.ts');
@@ -314,7 +314,7 @@ const { requestModel } = await import('./runner.ts');
 
 `onChunk?.(event.delta)` 中的 `?.` 表示回调存在才调用。CLI 提供回调，HTTP 当前没有提供。
 
-`content` 放在循环外，因此会累积本轮所有模型请求的文本片段，最终保存的可能包括工具调用前后的文字。工具执行结果本身不会直接作为聊天正文追加，模型会根据它生成文本。
+`content` 放在循环外，因此会累积本轮所有模型请求的文本片段，最终保存的可能包括工具调用前后的文字。工具执行结果本身不会直接作为交互正文追加，模型会根据它生成文本。
 
 ## 8. 工具调用：模型提出请求，程序执行函数
 
@@ -325,11 +325,11 @@ const { requestModel } = await import('./runner.ts');
 如果有工具调用，流程如下：
 
 ```text
-模型：请求 search_notes，arguments = {"query":"Promise"}
+模型：请求 search_practice_notes，arguments = {"query":"二分"}
   ↓
-程序：executeTool("search_notes", arguments)
+程序：executeTool("search_practice_notes", arguments)
   ↓
-本地：读取 notes 下的 Markdown，返回匹配片段
+本地：检索刷题笔记 JSON，返回题目信息、摘要和 ID
   ↓
 程序：追加 function_call_output，绑定原来的 call_id
   ↓
@@ -382,7 +382,7 @@ const { requestModel } = await import('./runner.ts');
 
 成功输出带 `ok: true`；未知工具、坏 JSON、参数错误或执行失败，统一变成 `{ ok: false, error: ... }` 的 JSON 字符串。
 
-工具失败通常不会立刻终止整轮聊天：错误结果会送给模型，让它修正参数或解释失败。模型接口本身失败则由外层转换成 502。
+工具失败通常不会立刻终止整轮交互：错误结果会送给模型，让它修正参数或解释失败。模型接口本身失败则由外层转换成 502。
 
 新增工具时，在列表加入描述和执行函数即可，不需要修改通用分派器。
 
@@ -394,35 +394,9 @@ const { requestModel } = await import('./runner.ts');
 
 `get_current_time` 需要一个非空字符串 `timezone`。本地使用 `Intl.DateTimeFormat` 按时区格式化本机当前时间。时区无效时抛错，再由注册表转换成失败结果。
 
-### 笔记搜索
+### 刷题笔记工具
 
-`search_notes` 需要一个非空字符串 `query`。执行顺序：
-
-1. trim 关键词并转为小写用于匹配。
-2. 枚举 `notes/` 下的普通 `.md` 文件，按文件名排序。
-3. 逐个读取文件，按行首二级标题 `## ` 分段。
-4. 对每段提取 `heading` 和正文 `text`；文件开头的介绍也参与搜索。
-5. 判断标题加正文是否包含关键词，英文忽略大小写。
-6. 返回最多 5 个 `{ file, heading, text }`。
-
-```json
-{
-  "query": "Promise",
-  "matches": [
-    {
-      "file": "example.md",
-      "heading": "Promise",
-      "text": "这里是匹配章节的原文。"
-    }
-  ]
-}
-```
-
-上面是结构示例，不是实际文件的查询结果。执行器还会给最终工具结果加上 `ok: true`。
-
-没有匹配时返回空数组，是一次成功执行。读取文件失败则是工具错误。
-
-这里是字面关键词检索，没有 embedding 或语义排序。前 5 条由遍历顺序决定；分段也尚未处理代码块里的二级标题。引用要求目前通过提示词表达，还没有程序化核验引用或来源点击功能。
+保存、搜索、读取、修改均复用结构化 JSON 存储。搜索支持关键词、题号和标签，返回摘要和 ID；完整内容通过读取工具获取。详细参数及流程见第 20 节。
 
 ## 10. 会话怎样持久化和恢复
 
@@ -467,7 +441,7 @@ data/
 
 ## 11. 成功和失败最后怎样返回给用户
 
-成功时，`requestModel` 返回文本，service 保存会话后返回 `ChatResult`：
+成功时，`requestModel` 返回文本，service 保存会话后返回 `AgentResult`：
 
 - CLI 更新当前会话变量；文本此前已经通过回调逐段显示。
 - HTTP 取出 `conversationId` 和 `reply`，通过 `sendJson` 返回 200。
@@ -481,7 +455,7 @@ HTTP 入口统一捕获异常：
 | 400 | JSON、字段、会话 ID 或消息内容不合法 |
 | 404 | 路由或会话不存在 |
 | 405 | 方法不支持 |
-| 409 | 同一服务实例内该会话正在聊天 |
+| 409 | 同一服务实例内该会话正在交互 |
 | 413 | 正文超过 64 KiB |
 | 415 | 正文媒体类型不是 JSON |
 | 500 | 文件读取、保存失败，或未分类内部异常 |
@@ -504,15 +478,15 @@ HTTP 客户端断开目前也不会自动取消模型任务。服务器设置了
 
 ## 12. 用一个实际问题串起全部流程
 
-假设已有会话 `id`，用户问：“我的笔记里怎样解释 Promise？”
+假设已有会话 `id`，用户问：“找找我之前的二分笔记”
 
 1. CLI 读取问题，或 HTTP 路由从 JSON 中取出 `conversationId` 和 `message`。
 2. service 校验消息，标记会话忙碌，读取磁盘历史。
 3. service 构造“旧历史 + 当前问题”，调用模型。
-4. 模型可能请求 `search_notes`，参数为 `{"query":"Promise"}`。
-5. 注册表查到工具、解析参数并执行，搜索本地 Markdown。
+4. 模型可能请求 `search_practice_notes`，参数为 `{"query":"二分"}`。
+5. 注册表查到工具、解析参数并执行，搜索本地刷题笔记。
 6. 程序把原始模型输出与对应的工具结果追加到本轮输入。
-7. 再次请求模型，模型依据片段生成带文件名/章节的回答。
+7. 再次请求模型，模型依据摘要回答，需要完整内容时再调用 get_practice_note，并注明笔记 ID。
 8. CLI 通过回调逐段显示；HTTP 此时仍等待。
 9. 模型完整结束且有有效文本，service 追加一轮问答、保存、释放忙碌标记。
 10. CLI 更新会话对象；HTTP 返回完整 JSON。
@@ -537,7 +511,7 @@ node --test test/*.test.mjs
 | `test/tool-registry.test.mjs` | 同步/异步工具分派、不同参数结构、重复工具名 |
 | `test/session.test.mjs` | 会话保存加载、切换、损坏数据及写入失败 |
 
-此前还做过临时的 service 并发/失败验证、正文解析和模拟路由检查；这些不是已经保存进测试目录的长期回归测试。用户已通过 curl 验证聊天及历史。最近路由修改的验证是模拟请求，因环境不允许监听端口，没有重新做真实 HTTP 网络验证。
+此前还做过临时的 service 并发/失败验证、正文解析和模拟路由检查；这些不是已经保存进测试目录的长期回归测试。用户已通过 curl 验证交互及历史。最近路由修改的验证是模拟请求，因环境不允许监听端口，没有重新做真实 HTTP 网络验证。
 
 测试中的模拟模型不等同于真实供应商接口验证，也不需要调用付费模型。
 
@@ -549,7 +523,7 @@ node --test test/*.test.mjs
 HTML 输入框 → 点击按钮 → 浏览器 fetch /api/echo → 页面展示返回值
 ```
 
-之后将 echo 换成创建会话和聊天接口，再添加消息列表、等待状态、错误提示、流式文本与工具事件、会话恢复、取消生成。
+之后将 echo 换成创建会话和交互接口，再添加消息列表、等待状态、错误提示、流式文本与工具事件、会话恢复、取消生成。
 
 这些新入口可以继续使用 `src/agent/service.ts`。它不依赖终端显示方式，这正是我们先抽出共享业务层的实际收益。
 
@@ -559,7 +533,7 @@ HTML 输入框 → 点击按钮 → 浏览器 fetch /api/echo → 页面展示�
 前端由助手实现，用户后续重点学习后端。`public/index.html` 提供侧栏会话列表、消息区域和输入框，`style.css` 负责响应式布局，`app.js` 负责浏览器状态与 API 调用。
 
 1. 启动页面时读取 localStorage 中的最近会话 ID，通过 GET 接口加载服务器历史。浏览器只存列表和选择状态，不保存密钥。
-2. 首次发送时先 POST 创建会话，再 POST 聊天；也可以点击新建、选择列表中的会话或粘贴 ID 打开。
+2. 首次发送时先 POST 创建会话，再 POST 交互；也可以点击新建、选择列表中的会话或粘贴 ID 打开。
 3. 生成期间锁定发送和会话切换，显示等待状态；后端成功返回后显示完整回复。
 4. 失败时保留输入，重新读取服务器历史核对保存结果；历史也无法读取时，先要求刷新再发送，不自动重试模型请求。
 5. 最近列表只记录当前浏览器访问过的最多 50 个会话，不代表服务器全部会话。
@@ -604,11 +578,11 @@ curl -i http://127.0.0.1:3001/api/sandbox/run \
 
 ## 17. 网页流式输出与工具卡片
 
-网页改用 `POST /api/chat/stream`，请求仍为 `{ conversationId, message }`。响应采用 NDJSON：每行一个 JSON 事件。
+网页改用 `POST /api/agent/stream`，请求仍为 `{ conversationId, message }`。响应采用 NDJSON：每行一个 JSON 事件。
 
 - `delta`：模型文字片段，浏览器累积正文并每约 40 毫秒更新一次经 DOMPurify 清理的 Markdown。
 - `tool`：工具执行结束后包含 name、argumentsJson、output，网页展示可展开的参数与结果卡片。Python 工具区分协议成功与程序执行成功。
-- `done`：只有 chat-service 完成保存后才发送，包含 conversationId、reply、title；浏览器据此确认已保存并用最终正文校正显示。
+- `done`：只有 AgentService 完成保存后才发送，包含 conversationId、reply、title；浏览器据此确认已保存并用最终正文校正显示。
 - `error`：已开始发送时的错误事件，包含 code 和 message；还没发送任何片段时沿用 HTTP 错误状态及 JSON。
 
 浏览器用 TextDecoder 流式解码，并保留未完成的 JSON 行，处理中文字符及事件跨网络块的情况。没有 done 就结束视为异常，保留输入并重新查询历史，不自动重复发送。工具卡片只保留本轮，刷新或切换会话后清空。当前没有取消执行；连接断开后后端可能继续生成并保存，需刷新历史确认。
@@ -624,3 +598,33 @@ curl -i http://127.0.0.1:3001/api/sandbox/run \
 - `RegisteredTool` 类型放在 `registry.ts`；共用校验辅助函数放在 `implementations.ts`，不另拆小文件。
 
 新增工具：在 implementations.ts 增加工厂，再在 index.ts 注册，不修改 registry.ts。
+
+
+## 18. 取消 Agent 执行
+
+网页执行期间显示“停止”。`public/app.js` 使用 AbortController 中止流式 fetch，保留已收到的部分文本并标记未完成，同时读取历史核对是否已保存。
+
+`src/http/app.ts` 监听响应连接的 `close` 事件；只有响应尚未正常结束时才取消本轮信号。信号通过 service 的 callbacks 传给 runner，runner 将信号传入 SDK 请求和工具注册表。工具执行前后检查取消状态，取消不会被转换成普通工具错误再交给模型重试。
+
+Python 工具把同一个信号传入沙箱。运行阶段取消会停止 Docker 客户端，再通过独立的 `docker rm --force` 终止并删除容器；创建阶段先等待创建命令结束再清理，避免清理早于创建。清理有独立超时，完成前保留沙箱名额，清理失败保持闭锁。
+
+service 在保存前检查取消；若已开始写盘，则等待写盘完成。取消不能撤销已完成的工具副作用。网页核对历史时若保存仍在进行，会提示稍后刷新；立即重试也可能因后端仍在清理返回忙碌。目前取消操作接在网页流式入口，CLI 和非流式 HTTP 入口未接入。
+
+
+## 19. 工具调用历史
+
+service 收集 onTool 回调中的 name 和 argumentsJson，成功保存时附加到本轮助手消息的 toolCalls 数组。工具输出不落盘。流式 done 事件携带这些记录，网页即时展示并在重新读取会话后恢复。旧消息没有 toolCalls 也可读取。构造模型输入时仅选择 role/content，历史调用元数据不参与模型协议。当前只保存成功轮次中已返回的工具调用，取消或失败轮次不会保存；这不是独立的执行审计日志。
+
+
+## 20. 刷题笔记工具
+
+四个工具均在 src/tools/implementations.ts 实现，在 src/tools/index.ts 注册，工具分派器无需改动。
+
+- save_practice_note({ note })：保存 problem、original、summary 三部分，返回后端生成的 ID 和时间。
+- search_practice_notes({ query?, number?, tag?, limit? })：可组合筛选；空对象列出最近笔记，返回 ID、题目信息、标签和最多 300 字的思路摘要。默认 10 条，最多 20 条；关键词不区分英文大小写，标签完整匹配，条件取交集。
+- get_practice_note({ id })：读取完整笔记，ID 必须来自真实结果。
+- update_practice_note({ id, note })：完整替换内容，保留 ID 和创建时间；修改前先读取，沿用未修改字段。
+
+流程示例：“把这题记下来” → 保存 → 返回 ID；“找我的哈希表笔记” → 搜索 → 读取 → 引用原文；“修改这篇的易错点” → 读取 → 完整更新。笔记输入复用存储层校验，失败返回工具错误，不能宣称写入成功。缺失目录按空集合处理，损坏笔记报错，不伪装成没有结果。写入开始后取消不撤销已完成的保存，当前也没有幂等去重或跨会话并发编辑冲突检测。
+
+笔记删除与导出：新增 delete_practice_note({ id }) 和 export_practice_note_markdown({ id })。删除仅针对明确指定的笔记，文件不存在时报错；导出为 data/exports/ 下独立 Markdown 快照，包含题目信息、原始思路/代码/题解、整理内容和时间，返回本机路径，尚无网页下载接口。导出文件不会因删除原笔记而删除；已完成的删除无法通过取消生成撤销。

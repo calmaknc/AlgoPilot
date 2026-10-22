@@ -1,5 +1,6 @@
+import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
 
 /** 输入内容不包含 ID 和时间；这些元数据由后端生成。 */
 export type PracticeNoteInput = {
@@ -32,7 +33,7 @@ export type PracticeNote = PracticeNoteInput & {
     updatedAt: string;
 };
 
-// 与 notes/ 中供关键词搜索的 Markdown 分开；此目录属于被忽略的 data/。
+// 用户刷题笔记存放在被忽略的 data/ 下。
 const notesDirectory = new URL('../../data/practice-notes/', import.meta.url);
 
 /** 基础辅助函数已提供：将 unknown 缩小为可访问字段的对象。 */
@@ -237,14 +238,6 @@ export async function getPracticeNote(
     return parsePracticeNote(value, id);
 }
 
-/** TODO 5（已完成）：完整替换笔记内容（不是局部 PATCH）。
- * 1. await getPracticeNote(id, directory)，确保旧笔记存在且可读。
- * 2. parsePracticeNoteInput(input)，得到新的完整内容。
- * 3. 保留旧 id 和 createdAt，updatedAt 使用当前时间。
- * 4. await writeNote(newNote, directory)，然后返回。
- * MVP 仅按顺序调用；并发编辑冲突检测留到接口阶段，不把原子替换当成并发锁。
- * 自动整理时应沿用 old.original；只有用户明确修改原文时才传入新的 original。
- */
 export async function updatePracticeNote(
     id: string,
     input: unknown,
@@ -256,4 +249,98 @@ export async function updatePracticeNote(
 
     await writeNote(newNote, directory);
     return newNote;
+}
+
+
+/** 小规模本地检索：多个条件取交集，返回摘要而非完整代码。 */
+export async function searchPracticeNotes(
+    filters: { query?: string; number?: number; tag?: string; limit?: number },
+    directory: URL = notesDirectory,
+    signal?: AbortSignal,
+) {
+    const limit = filters.limit ?? 10;
+    const query = filters.query?.trim().toLowerCase() ?? '';
+    const tag = filters.tag?.trim().toLowerCase();
+    let entries;
+    try { entries = await readdir(directory, { withFileTypes: true }); }
+    catch (error) {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return { matches: [], total: 0 };
+        throw error;
+    }
+    const matches = [];
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+        signal?.throwIfAborted();
+        const match = /^note_([a-zA-Z0-9_-]{1,128})\.json$/.exec(entry.name);
+        if (!entry.isFile() || !match) continue;
+        const note = await getPracticeNote(match[1]!, directory);
+        if (filters.number !== undefined && note.problem.number !== filters.number) continue;
+        if (tag && !note.summary.tags.some(value => value.toLowerCase() === tag)) continue;
+        const text = [note.problem.title, note.problem.number ?? '', note.original.thought,
+            note.original.code, note.original.solution ?? '', note.summary.approach,
+            ...note.summary.tags, ...note.summary.pitfalls, ...note.summary.reviewPoints].join('\n').toLowerCase();
+        if (query && !text.includes(query)) continue;
+        matches.push({ id: note.id, problem: note.problem, tags: note.summary.tags,
+            approach: note.summary.approach.slice(0, 300), updatedAt: note.updatedAt });
+    }
+    matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+    return { matches: matches.slice(0, limit), total: matches.length };
+}
+
+
+/** 只删除指定笔记；不存在时抛错，不伪装成成功。已导出的文件保留。 */
+export async function deletePracticeNote(id: string, directory: URL = notesDirectory, signal?: AbortSignal) {
+    const file = noteFile(id, directory);
+    const note = await getPracticeNote(id, directory);
+    signal?.throwIfAborted();
+    await rm(file);
+    return { id, problem: note.problem, deleted: true };
+}
+
+/** 围栏长度大于代码中的反引号串，防止原始代码意外结束代码块。 */
+export function practiceNoteToMarkdown(note: PracticeNote): string {
+    const longest = Math.max(2, ...(note.original.code.match(/`+/g) ?? []).map(value => value.length));
+    const fence = '`'.repeat(longest + 1);
+    const language = /^[a-zA-Z0-9_+-]{1,30}$/.test(note.original.language) ? note.original.language : '';
+    const list = (items: string[]) => items.length ? items.map(item => `- ${item}`).join('\n') : '暂无';
+    return [
+        `# ${note.problem.title.replace(/[\r\n]+/g, ' ')}`,
+        `笔记 ID：${note.id}`,
+        `题号：${note.problem.number ?? '未记录'}`,
+        `题目链接：${note.problem.url ?? '未记录'}`,
+        `创建时间：${note.createdAt}\n\n更新时间：${note.updatedAt}`,
+        '## 用户原始内容',
+        '### 思路', note.original.thought || '未提供',
+        '### 代码', `${fence}${language}\n${note.original.code}${note.original.code.endsWith('\n') ? '' : '\n'}${fence}`,
+        '### 原始题解', note.original.solution || '未提供',
+        '## Agent 整理',
+        '### 解题思路', note.summary.approach || '尚未整理',
+        '### 标签', list(note.summary.tags),
+        '### 复杂度', `时间：${note.summary.timeComplexity || '未分析'}\n\n空间：${note.summary.spaceComplexity || '未分析'}`,
+        '### 易错点', list(note.summary.pitfalls),
+        '### 复习要点', list(note.summary.reviewPoints),
+    ].join('\n\n') + '\n';
+}
+
+/** 导出独立快照，文件名由后端生成，不接受外部路径，不覆盖之前的导出。 */
+export async function exportPracticeNoteMarkdown(
+    id: string,
+    directory: URL = notesDirectory,
+    exportsDirectory = new URL('../../data/exports/', import.meta.url),
+    signal?: AbortSignal,
+) {
+    const note = await getPracticeNote(id, directory);
+    const markdown = practiceNoteToMarkdown(note);
+    const filename = `note_${note.id}_${randomUUID()}.md`;
+    const file = new URL(filename, exportsDirectory);
+    const temporary = new URL(`${file.href}.tmp`);
+    signal?.throwIfAborted();
+    await mkdir(exportsDirectory, { recursive: true });
+    try {
+        await writeFile(temporary, markdown, { encoding: 'utf8', flag: 'wx' });
+        signal?.throwIfAborted();
+        await rename(temporary, file);
+    } finally {
+        await rm(temporary, { force: true });
+    }
+    return { id: note.id, filename, path: fileURLToPath(file), bytes: Buffer.byteLength(markdown, 'utf8') };
 }

@@ -7,7 +7,7 @@ export type SandboxInput = {
 };
 
 export type SandboxResult = {
-    status: 'completed' | 'timeout' | 'output_limit' | 'infrastructure_error';
+    status: 'cancelled' | 'completed' | 'timeout' | 'output_limit' | 'infrastructure_error';
     stdout: string;
     stderr: string;
     exitCode: number | null;
@@ -62,7 +62,7 @@ type CommandResult = {
     stdout: string;
     stderr: string;
     exitCode: number | null;
-    reason?: 'timeout' | 'output_limit' | 'process_error';
+    reason?: 'cancelled' | 'timeout' | 'output_limit' | 'process_error';
     error?: string;
 };
 
@@ -71,6 +71,7 @@ function dockerCommand(
     stdin = '',
     timeoutMs = CONTROL_TIMEOUT_MS,
     outputLimit = 16 * 1024,
+    signal?: AbortSignal,
 ): Promise<CommandResult> {
     return new Promise((resolve) => {
         const child = spawn('docker', args, {
@@ -89,6 +90,7 @@ function dockerCommand(
             if (settled) return;
             settled = true;
             clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
             if (forceFinish) clearTimeout(forceFinish);
             child.stdin.destroy();
             child.stdout.destroy();
@@ -135,6 +137,9 @@ function dockerCommand(
                 stop('process_error', err.message);
             }
         })
+        const onAbort = () => stop('cancelled', '执行已取消');
+        signal?.addEventListener('abort', onAbort, { once: true });
+        if (signal?.aborted) onAbort();
         child.stdin.end(stdin);
     });
 }
@@ -154,9 +159,10 @@ function parseContainerState(raw: string): {status: string; exitCode: number; er
     return { status: value.Status, exitCode: value.ExitCode, error: value.Error };
 }
 
-export async function runPythonSandbox(value: unknown) : Promise<SandboxResult> {
+export async function runPythonSandbox(value: unknown, signal?: AbortSignal) : Promise<SandboxResult> {
+    signal?.throwIfAborted();
     const input = parseSandboxInput(value);
-    const name = `mini-fastgpt-sandbox-${randomUUID()}`;
+    const name = `mini-agent-sandbox-${randomUUID()}`;
     const startedAt = performance.now();
     const result: SandboxResult = {
         status: 'infrastructure_error', stdout: '', stderr: '',
@@ -170,10 +176,11 @@ export async function runPythonSandbox(value: unknown) : Promise<SandboxResult> 
             throw new Error(`Docker 不可用：${describeFailure(available)}`);
         }
 
+        signal?.throwIfAborted();
         creationAttempted = true;
         const created = await dockerCommand([
             'create', '--name', name, '--pull=never',
-            '--label', 'mini-fastgpt.sandbox=true',
+            '--label', 'mini-agent.sandbox=true',
             '--interactive',
             '--network', 'none',
             '--read-only',
@@ -193,15 +200,18 @@ export async function runPythonSandbox(value: unknown) : Promise<SandboxResult> 
             throw new Error(`创建容器失败：${describeFailure(created)}`);
         }
 
+        // 创建请求必须先结束，再删除容器，避免取消创建与清理产生竞态。
+        signal?.throwIfAborted();
         const execution = await dockerCommand(
             ['start', '--attach', '--interactive', name],
             input.stdin,
             SANDBOX_LIMITS.timeoutMs,
             SANDBOX_LIMITS.outputBytes,
+            signal,
         );
         result.stdout = execution.stdout;
         result.stderr = execution.stderr;
-        if (execution.reason === 'timeout' || execution.reason === 'output_limit') {
+        if (execution.reason === 'cancelled' || execution.reason === 'timeout' || execution.reason === 'output_limit') {
             result.status = execution.reason;
         } else if (execution.reason) {
             throw new Error(describeFailure(execution));
@@ -221,7 +231,7 @@ export async function runPythonSandbox(value: unknown) : Promise<SandboxResult> 
             result.exitCode = state.exitCode;
         }
     } catch (error) {
-        result.status = 'infrastructure_error';
+        result.status = signal?.aborted ? 'cancelled' : 'infrastructure_error';
         result.error = error instanceof Error ? error.message : '沙箱基础设施异常';
     } finally {
         if (creationAttempted) {

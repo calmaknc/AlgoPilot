@@ -1,12 +1,12 @@
+import { deletePracticeNote, exportPracticeNoteMarkdown, createPracticeNote, getPracticeNote, updatePracticeNote, searchPracticeNotes } from '../storage/practice-notes.ts';
 import type { FunctionTool } from 'openai/resources/responses/responses';
-import { readdir, readFile } from 'node:fs/promises';
 import type { RegisteredTool } from './registry.ts';
 import { sandboxService, type SandboxService } from '../sandbox/service.ts';
 
 // 工具描述、参数处理和执行入口统一放在此文件。
 // Docker 底层执行仍复用 sandbox 模块；注册清单在 index.ts。
 
-/** 时间和笔记搜索工具均只接收一个非空字符串字段，复用其运行时校验。 */
+/** 时间和按 ID 读取工具均只接收一个非空字符串字段，复用其运行时校验。 */
 function readSingleStringArgument(args: unknown, key: string): string {
     if (
         typeof args !== 'object' || args === null || Array.isArray(args) ||
@@ -70,86 +70,6 @@ export function createTimeTool(): RegisteredTool {
     };
 }
 
-// ── 笔记搜索 ──
-
-const notesDirectory = new URL('../../notes/', import.meta.url);
-
-const searchNotesDefinition: FunctionTool = {
-    type: 'function',
-    name: 'search_notes',
-    description: '搜索本地学习笔记，返回文件名、章节标题和原文片段。query 使用简短关键词或术语，如“联合类型”“Promise”，不要传完整问题。',
-    parameters: {
-        type: 'object',
-        properties: {
-            query: { type: 'string', description: '用于字面匹配的非空关键词，英文忽略大小写' }
-        },
-        required: ['query'],
-        additionalProperties: false
-    },
-    strict: false
-};
-
-type NoteMatch = {
-    file: string;
-    heading: string;
-    text: string;
-};
-
-type SearchNotesResult = {
-    query: string;
-    matches: NoteMatch[];
-};
-
-/** 按二级标题搜索当前笔记，忽略英文大小写，最多返回 5 节原文。 */
-export async function searchNotes(query: string): Promise<SearchNotesResult> {
-    const normalizedQuery = query.trim();
-    if (normalizedQuery.length === 0) {
-        throw new Error('关键词不能为空');
-    }
-    const keyword = normalizedQuery.toLowerCase();
-    const maxMatches = 5;
-    const entries = await readdir(notesDirectory, {withFileTypes: true});
-
-    const files = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
-    .map((entry) => entry.name)
-    .sort();
-
-    const result: SearchNotesResult = {query: normalizedQuery, matches: []};
-
-    for (const filename of files) {
-        const text = await readFile(new URL(filename, notesDirectory), 'utf-8');
-        // 仅匹配行首的二级标题，避免将 ### 或正文中的 ## 当成分隔符。
-        // 适用于当前简单笔记；尚未处理代码块内恰好出现二级标题的情况。
-        const searchUnits = text.split(/^##[\t ]+/m);
-        for (const searchUnit of searchUnits) {
-            const lines = searchUnit.trim().split(/\r?\n/);
-            // 第一块可能是文件的一级标题和简介，也保留为可搜索内容。
-            const heading = (lines[0] ?? '').replace(/^#[\t ]+/, '').trim();
-            const body = lines.slice(1).join('\n').trim();
-            const matched = `${heading}\n${body}`.toLowerCase().includes(keyword);
-            if (matched) {
-                result.matches.push({file: filename, heading, text: body});
-                if (result.matches.length >= maxMatches) {
-                    return result;
-                }
-            }
-        }
-    }
-
-    return result;
-}
-
-/** 与时间、Python 工具使用相同的注册形式。 */
-export function createSearchNotesTool(): RegisteredTool {
-    return {
-        definition: searchNotesDefinition,
-        execute: async (args) => {
-            const query = readSingleStringArgument(args, 'query');
-            return searchNotes(query);
-        },
-    };
-}
-
 // ── Python 沙箱 ──
 
 export function createPythonTool(service: SandboxService = sandboxService): RegisteredTool {
@@ -169,8 +89,8 @@ export function createPythonTool(service: SandboxService = sandboxService): Regi
             },
             strict: false,
         },
-        execute: async (args) => {
-            const result = await service.run(args);
+        execute: async (args, signal) => {
+            const result = await service.run(args, signal);
             // 注册表的 ok 表示工具协议成功，程序是否运行成功另看此字段。
             return {
                 ...result,
@@ -178,4 +98,97 @@ export function createPythonTool(service: SandboxService = sandboxService): Regi
             };
         },
     };
+}
+
+
+// ── 用户刷题笔记 ──
+const stringField = { type: 'string' };
+const stringsField = { type: 'array', items: stringField };
+const practiceNoteSchema = {
+    type: 'object', additionalProperties: false,
+    properties: {
+        problem: { type: 'object', additionalProperties: false,
+            properties: { title: stringField, number: { type: 'integer', minimum: 1 }, url: stringField }, required: ['title'] },
+        original: { type: 'object', additionalProperties: false,
+            description: '保留用户原始思路和代码；缺失字段用空字符串，thought/code 至少一个非空。不得编造用户原文。',
+            properties: { thought: stringField, code: stringField, language: stringField, solution: stringField },
+            required: ['thought', 'code', 'language'] },
+        summary: { type: 'object', additionalProperties: false,
+            description: 'Agent 整理的内容；未知用空字符串或空数组，不把推测写为运行验证结论。',
+            properties: { approach: stringField, tags: stringsField, timeComplexity: stringField,
+                spaceComplexity: stringField, pitfalls: stringsField, reviewPoints: stringsField },
+            required: ['approach', 'tags', 'timeComplexity', 'spaceComplexity', 'pitfalls', 'reviewPoints'] },
+    }, required: ['problem', 'original', 'summary'],
+};
+
+function noteArgs(value: unknown, allowed: string[]): Record<string, unknown> {
+    if (typeof value !== 'object' || value === null || Array.isArray(value) ||
+        Object.keys(value).some(key => !allowed.includes(key))) throw new Error('笔记工具参数结构不正确或包含多余字段');
+    return value as Record<string, unknown>;
+}
+function noteTool(name: string, description: string, properties: Record<string, unknown>,
+    required: string[], execute: RegisteredTool['execute']): RegisteredTool {
+    return { definition: { type: 'function', name, description, strict: false,
+        parameters: { type: 'object', properties, required, additionalProperties: false } }, execute };
+}
+
+export function createSavePracticeNoteTool(directory?: URL): RegisteredTool {
+    return noteTool('save_practice_note', '用户明确要求记录或保存刷题笔记时使用，返回新笔记 ID。修改已有笔记使用 update_practice_note。',
+        { note: practiceNoteSchema }, ['note'], async (value, signal) => {
+            const args = noteArgs(value, ['note']);
+            signal?.throwIfAborted();
+            const note = await createPracticeNote(args.note, directory);
+            return { id: note.id, problem: note.problem, createdAt: note.createdAt, updatedAt: note.updatedAt };
+        });
+}
+export function createGetPracticeNoteTool(directory?: URL): RegisteredTool {
+    return noteTool('get_practice_note', '按搜索结果或保存结果中的真实 ID 读取完整刷题笔记。',
+        { id: stringField }, ['id'], async value => {
+            const id = readSingleStringArgument(value, 'id');
+            return { note: await getPracticeNote(id, directory) };
+        });
+}
+export function createUpdatePracticeNoteTool(directory?: URL): RegisteredTool {
+    return noteTool('update_practice_note', '完整替换已有笔记。先读取原笔记，保留未修改字段和用户原文，仅按用户要求修改；不接受虚构 ID。',
+        { id: stringField, note: practiceNoteSchema }, ['id', 'note'], async (value, signal) => {
+            const args = noteArgs(value, ['id', 'note']);
+            if (typeof args.id !== 'string') throw new Error('id 必须是字符串');
+            signal?.throwIfAborted();
+            const note = await updatePracticeNote(args.id, args.note, directory);
+            return { id: note.id, problem: note.problem, createdAt: note.createdAt, updatedAt: note.updatedAt };
+        });
+}
+export function createSearchPracticeNotesTool(directory?: URL): RegisteredTool {
+    return noteTool('search_practice_notes', '搜索用户已保存的刷题笔记，按关键词、题号、标签取交集；空条件列出最近笔记。返回 ID 和摘要，完整内容需 get_practice_note。',
+        { query: stringField, number: { type: 'integer', minimum: 1 }, tag: stringField,
+            limit: { type: 'integer', minimum: 1, maximum: 20 } }, [], async (value, signal) => {
+            const args = noteArgs(value, ['query', 'number', 'tag', 'limit']);
+            for (const key of ['query', 'tag']) {
+                if (args[key] !== undefined && (typeof args[key] !== 'string' || !(args[key] as string).trim()))
+                    throw new Error(`${key} 必须是非空字符串，列出最近笔记时请省略该字段`);
+            }
+            for (const key of ['number', 'limit']) {
+                if (args[key] !== undefined && (typeof args[key] !== 'number' || !Number.isSafeInteger(args[key]) || (args[key] as number) < 1))
+                    throw new Error(`${key} 必须是正的安全整数`);
+            }
+            if (typeof args.limit === 'number' && args.limit > 20) throw new Error('limit 不能超过 20');
+            return searchPracticeNotes(args as { query?: string; number?: number; tag?: string; limit?: number }, directory, signal);
+        });
+}
+
+
+export function createDeletePracticeNoteTool(directory?: URL): RegisteredTool {
+    return noteTool('delete_practice_note', '仅在用户明确要求删除指定刷题笔记时使用。id 必须来自真实笔记；目标不明确时先搜索并澄清。删除不撤销已导出的 Markdown 文件。',
+        { id: stringField }, ['id'], async (value, signal) => {
+            const id = readSingleStringArgument(value, 'id');
+            return deletePracticeNote(id, directory, signal);
+        });
+}
+
+export function createExportPracticeNoteTool(directory?: URL, exportsDirectory?: URL): RegisteredTool {
+    return noteTool('export_practice_note_markdown', '将指定刷题笔记导出为本机 Markdown 快照，保存到 data/exports/，返回文件名和本机路径。不是网页下载链接，不修改原笔记。',
+        { id: stringField }, ['id'], async (value, signal) => {
+            const id = readSingleStringArgument(value, 'id');
+            return exportPracticeNoteMarkdown(id, directory, exportsDirectory, signal);
+        });
 }

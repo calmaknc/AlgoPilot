@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { createConversation, loadConversation, loadLastConversation, saveConversation } from '../src/storage/conversations.ts';
 
 test('会话保存、重新加载、切换、损坏与写入失败', async () => {
-    const temporary = await mkdtemp(join(tmpdir(), 'mini-fastgpt-session-'));
+    const temporary = await mkdtemp(join(tmpdir(), 'mini-agent-session-'));
     const directory = pathToFileURL(`${temporary}/data/`);
     try {
         const first = await loadLastConversation(directory);

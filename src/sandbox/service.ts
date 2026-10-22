@@ -1,14 +1,15 @@
 import { AppError } from '../shared/errors.ts';
 import { parseSandboxInput, runPythonSandbox, type SandboxInput, type SandboxResult } from './runner.ts';
 
-type Runner = (input: SandboxInput) => Promise<SandboxResult>;
+type Runner = (input: SandboxInput, signal?: AbortSignal) => Promise<SandboxResult>;
 
 /** HTTP 和工具共用服务。测试可以注入假执行器，避免调用 Docker。 */
 export function createSandboxService(runner: Runner = runPythonSandbox) {
     let busy = false;
     let cleanupBlocked = false;
 
-    async function run(value: unknown): Promise<SandboxResult> {
+    async function run(value: unknown, signal?: AbortSignal): Promise<SandboxResult> {
+        signal?.throwIfAborted();
         let input: SandboxInput;
         try {
             input = parseSandboxInput(value);
@@ -22,7 +23,7 @@ export function createSandboxService(runner: Runner = runPythonSandbox) {
         // 在 await 前占用名额；限制同进程中 HTTP 与 Agent 合计一个任务。
         busy = true;
         try {
-            const result = await runner(input);
+            const result = await runner(input, signal);
             if (result.cleanupError) cleanupBlocked = true;
             return result;
         } catch (error) {

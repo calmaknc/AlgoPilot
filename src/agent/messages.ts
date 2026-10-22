@@ -1,8 +1,15 @@
 export type Role = 'user' | 'assistant' | 'system';
 
+/** 已返回的工具调用元数据；不保存输出，也不作为模型协议消息发送。 */
+export type ToolCallRecord = {
+    name: string;
+    argumentsJson: string;
+};
+
 export type Message = {
     role: Role;
     content: string;
+    toolCalls?: ToolCallRecord[];
 };
 
 // const messages: Message[] = [];

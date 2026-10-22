@@ -11,8 +11,8 @@ test('网页流：UTF-8 拆包、中途显示、工具卡片、done 确认与截
     const tick = () => new Promise(resolve => setTimeout(resolve, 65));
     try {
         dom.window.TextDecoder = TextDecoder;
-        dom.window.fetch = async path => {
-            if (path === '/api/chat/stream') return new Response(new ReadableStream({ start(c) { controller = c; } }), { headers: { 'Content-Type': 'application/x-ndjson' } });
+        dom.window.fetch = async (path, options) => {
+            if (path === '/api/agent/stream') return new Response(new ReadableStream({ start(c) { controller = c; options.signal.addEventListener('abort', () => c.error(options.signal.reason), { once: true }); } }), { headers: { 'Content-Type': 'application/x-ndjson' } });
             return { ok: true, json: async () => structuredClone(note) };
         };
         dom.window.eval(await readFile(new URL('../public/app.js', import.meta.url), 'utf8'));
@@ -50,5 +50,19 @@ test('网页流：UTF-8 拆包、中途显示、工具卡片、done 确认与截
         assert.match(doc.querySelector('#status').textContent, /连接提前结束/);
         assert.equal(doc.querySelector('#message-input').value, '断流测试');
         assert.equal(doc.querySelector('#send-button').disabled, false);
+        doc.querySelector('#message-input').value = '取消测试';
+        doc.querySelector('#message-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+        await tick();
+        send({ type: 'delta', text: '保留部分' });
+        await tick();
+        doc.querySelector('#stop-button').click();
+        doc.querySelector('#stop-button').click();
+        await tick();
+        assert.match(doc.querySelector('.assistant .message-body').textContent, /保留部分.*\n.*已停止/s);
+        assert.match(doc.querySelector('#status').textContent, /已停止/);
+        assert.equal(doc.querySelector('#status').classList.contains('error'), false);
+        assert.equal(doc.querySelector('#stop-button').hidden, true);
+        assert.equal(doc.querySelector('#send-button').disabled, false);
+        assert.equal(doc.querySelector('#message-input').value, '取消测试');
     } finally { dom.window.close(); }
 });

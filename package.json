@@ -1,11 +1,11 @@
 {
-  "name": "mini-fastgpt",
+  "name": "mini-agent",
   "private": true,
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "start": "node --env-file=.env src/http/server.ts",
-    "chat": "node --env-file=.env src/cli/main.ts",
+    "cli": "node --env-file=.env src/cli/main.ts",
     "test": "node --test test/*.test.mjs"
   },
   "devDependencies": {

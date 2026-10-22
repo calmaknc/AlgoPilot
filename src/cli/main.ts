@@ -4,10 +4,10 @@ import { stdin, stdout } from 'node:process';
 import { formatMessages } from '../agent/messages.ts'
 import { saveConversation, loadLastConversation } from '../storage/conversations.ts';
 import type {Conversation} from '../storage/conversations.ts'
-import { createChatService } from '../agent/service.ts';
+import { createAgentService } from '../agent/service.ts';
 
 async function main(): Promise<void> {
-    const service = createChatService();
+    const service = createAgentService();
     const requestedId = process.argv[2];
     let conversation: Conversation = requestedId ? await service.getConversation(requestedId): await loadLastConversation();
     await saveConversation(conversation);
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     });
 
     console.log(`当前会话：${conversation.id}，已加载 ${conversation.messages.length} 条消息。`);
-    console.log('输入问题开始聊天，/history 查看历史，/new 新建会话，/exit 退出。');
+    console.log('输入问题开始交互，/history 查看历史，/new 新建会话，/exit 退出。');
 
     try {
         while (true) {
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
             try {
                 stdout.write('助手： ');
                 try {
-                    const result = await service.chat(
+                    const result = await service.run(
                         conversation.id,
                         input,
                         {
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
     } finally {
         terminal.close();
     }
-    console.log('聊天结束。');
+    console.log('交互结束。');
 }
 
 main().catch((error: unknown) => {

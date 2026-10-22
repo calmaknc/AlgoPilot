@@ -13,9 +13,9 @@ test('Markdown 排版、代码转义、危险 HTML 清理及用户纯文本', as
         }
         const markdown = '# 标题\n\n**加粗** 与 `inline`\n\n- 列表\n\n> 引用\n\n```js\n<script>alert(1)</script>\n```\n\n| 名称 | 值 |\n| --- | --- |\n| a | b |\n\n[文档](https://example.com)\n\n<script>alert(1)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)">危险链接</a><p style="position:fixed" onclick="alert(1)">内容</p>';
         const conversation = { id: 'demo', title: '示例', messages: [{ role: 'user', content: '**原样** <img src=x>' }, { role: 'assistant', content: markdown }] };
-        dom.window.localStorage.setItem('mini-fastgpt.sessions.v1', JSON.stringify({ selected: 'demo', sessions: [{ id: 'demo', title: '示例' }] }));
+        dom.window.localStorage.setItem('mini-agent.sessions.v1', JSON.stringify({ selected: 'demo', sessions: [{ id: 'demo', title: '示例' }] }));
         dom.window.TextDecoder = TextDecoder;
-        dom.window.fetch = async (path) => path === '/api/chat/stream'
+        dom.window.fetch = async (path) => path === '/api/agent/stream'
             ? new Response(JSON.stringify({ type: 'delta', text: '**新回复**' }) + '\n' + JSON.stringify({ type: 'done', conversationId: 'demo', title: '示例', reply: '**新回复**' }) + '\n', { headers: { 'Content-Type': 'application/x-ndjson' } })
             : ({ ok: true, json: async () => structuredClone(conversation) });
         dom.window.eval(await readFile(new URL('../public/app.js', import.meta.url), 'utf8'));

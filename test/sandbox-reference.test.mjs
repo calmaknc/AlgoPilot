@@ -64,6 +64,22 @@ if (args[0] === 'info') {
                 assert.equal(create.includes('--privileged'),false);
             }
         }
+        await writeFile(modeFile, 'timeout');
+        await writeFile(log, '');
+        const controller = new AbortController();
+        const running = runPythonSandbox({ code: 'while True: pass' }, controller.signal);
+        // 等待真正进入执行阶段再取消，验证 rm 使用独立于取消信号的清理路径。
+        for (let i = 0; i < 200; i++) {
+            if ((await readFile(log, 'utf8')).includes('"start"')) break;
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        controller.abort();
+        const cancelled = await running;
+        assert.equal(cancelled.status, 'cancelled');
+        assert.equal(cancelled.cleanupError, undefined);
+        const cleanupCalls = (await readFile(log, 'utf8')).trim().split('\n').map(JSON.parse);
+        assert.equal(cleanupCalls.at(-1)[0], 'rm');
+        assert.ok(cleanupCalls.at(-1).includes('--force'));
     } finally {
         if(originalPath === undefined) delete process.env.PATH;
         else process.env.PATH=originalPath;
