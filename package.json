@@ -6,7 +6,8 @@
     "typecheck": "tsc --noEmit",
     "start": "node --env-file=.env src/http/server.ts",
     "cli": "node --env-file=.env src/cli/main.ts",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "test:web:live": "node --env-file=.env scripts/web-smoke.mjs"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

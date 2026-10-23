@@ -2,15 +2,15 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
 import { formatMessages } from '../agent/messages.ts'
-import { saveConversation, loadLastConversation } from '../storage/conversations.ts';
+import { setLastConversation, loadLastConversation } from '../storage/conversations.ts';
 import type {Conversation} from '../storage/conversations.ts'
 import { createAgentService } from '../agent/service.ts';
 
 async function main(): Promise<void> {
     const service = createAgentService();
     const requestedId = process.argv[2];
-    let conversation: Conversation = requestedId ? await service.getConversation(requestedId): await loadLastConversation();
-    await saveConversation(conversation);
+    let conversation: Conversation = requestedId ? await service.getConversation(requestedId): (await loadLastConversation() ?? await service.newConversation());
+    await setLastConversation(conversation.id);
 
     const terminal = createInterface({
         input: stdin,

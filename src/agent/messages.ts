@@ -1,18 +1,45 @@
-export type Role = 'user' | 'assistant' | 'system';
+export type Role = Message['role'];
 
-/** 已返回的工具调用元数据；不保存输出，也不作为模型协议消息发送。 */
+export type TokenUsage = { inputTokens: number; outputTokens: number; totalTokens: number };
+export type ModelCallRecord = { round: number; durationMs: number; usage: TokenUsage | null };
+export type TurnMetrics = { durationMs: number; modelCalls: ModelCallRecord[]; usage: TokenUsage | null };
+
+/** 保存结果状态而非完整输出；不作为模型协议消息发送。可选字段兼容旧会话。 */
 export type ToolCallRecord = {
     name: string;
     argumentsJson: string;
+    /** 工具执行前已输出的正文字符数，用于还原文字与工具的顺序。 */
+    textOffset?: number;
+    callId?: string;
+    round?: number;
+    durationMs?: number;
+    status?: 'success' | 'error';
+    resultStatus?: string;
 };
 
-export type Message = {
-    role: Role;
+export type UserMessage = {
+    role: 'user';
+    content: string;
+    toolCalls?: never;
+    metrics?: never;
+};
+
+export type AssistantMessage = {
+    role: 'assistant';
     content: string;
     toolCalls?: ToolCallRecord[];
+    metrics?: TurnMetrics;
 };
 
-// const messages: Message[] = [];
+export type SystemMessage = {
+    role: 'system';
+    content: string;
+    toolCalls?: never;
+    metrics?: never;
+};
+
+/** role 是判别字段，缩小类型后才能给助手附加工具和统计。 */
+export type Message = UserMessage | AssistantMessage | SystemMessage;
 
 export function addMessage(messages: Message[], role: Role, content: string): void {
     const trimmed = content.trim();
@@ -36,9 +63,8 @@ export function getRecentMessages(messages: Message[], limit: number): Message[]
     return messages.slice(-limit);
 }
 
-export function getMessagesByRole(messages: Message[], role: Role): Message[] {
-    // 传lambda函数进去
-    return messages.filter((x) => x.role === role);
+export function getMessagesByRole<R extends Role>(messages: Message[], role: R): Extract<Message, { role: R }>[] {
+    return messages.filter((message): message is Extract<Message, { role: R }> => message.role === role);
 }
 
 export function formatMessages(messages: Message[]): string[] {

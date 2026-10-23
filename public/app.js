@@ -123,16 +123,7 @@ function renderMessages() {
     } else {
         for (const message of current.messages) {
             const body = addMessage(message.role, message.content);
-            for (const call of message.toolCalls ?? []) {
-                const card = document.createElement('details');
-                card.className = 'tool-card';
-                const heading = document.createElement('summary');
-                heading.textContent = `${call.name} · 历史调用（未保存结果）`;
-                const detail = document.createElement('pre');
-                detail.textContent = call.argumentsJson;
-                card.append(heading, detail);
-                body.append(card);
-            }
+            renderTurnRecord(body, message);
         }
     }
 }
@@ -195,32 +186,62 @@ async function requestStream(body, onEvent, signal) {
         reader.releaseLock();
     }
 }
-function clearTools() {
-    $('#tool-events').replaceChildren();
-    $('#tool-panel').hidden = true;
-}
-function showTool(event) {
-    $('#tool-panel').hidden = false;
+const pretty = value => { try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return String(value); } };
+const duration = value => typeof value === 'number' ? `${value.toLocaleString()} ms` : '耗时未记录';
+const usageText = usage => usage
+    ? `Token：输入 ${usage.inputTokens.toLocaleString()} / 输出 ${usage.outputTokens.toLocaleString()} / 合计 ${usage.totalTokens.toLocaleString()}`
+    : 'Token：未提供（不按 0 统计）';
+function toolCard(call) {
     const card = document.createElement('details');
     card.className = 'tool-card';
     const heading = document.createElement('summary');
-    let description = '已返回结果';
-    try {
-        const output = JSON.parse(event.output);
-        if (output.ok === false) description = '调用失败';
-        else if (event.name === 'run_python') description = output.executionSucceeded ? '程序正常退出' : `执行未成功：${output.status ?? '未知状态'}`;
-    } catch { description = '已返回结果'; }
-    heading.textContent = `${event.name} · ${description}`;
+    let description = call.resultStatus ?? '历史调用（未记录结果状态）';
+    if (!call.resultStatus && call.output !== undefined) {
+        try {
+            const result = JSON.parse(call.output);
+            description = result.ok === false ? '调用失败' : call.name === 'run_python'
+                ? result.executionSucceeded ? '程序正常退出' : `执行未成功：${result.status ?? '未知状态'}`
+                : '调用成功';
+        } catch { description = '结果无法解析'; }
+    }
+    heading.textContent = `${call.name} · ${description} · ${duration(call.durationMs)}`;
     const detail = document.createElement('pre');
-    const pretty = value => { try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return String(value); } };
-    detail.textContent = `参数\n${pretty(event.argumentsJson)}\n\n结果\n${pretty(event.output)}`;
+    detail.textContent = `${call.callId ? `调用 ID：${call.callId}\n\n` : ''}参数\n${pretty(call.argumentsJson)}` +
+        (call.output !== undefined ? `\n\n结果\n${pretty(call.output)}` : '');
     card.append(heading, detail);
-    $('#tool-events').append(card);
-    setStatus(`工具 ${event.name} 已返回，正在继续生成…`);
+    return card;
+}
+function appendModelText(body, text) {
+    const block = document.createElement('div');
+    block.className = 'model-text';
+    renderBody(block, 'assistant', text);
+    body.append(block);
+    return block;
+}
+function renderTurnRecord(body, message) {
+    const calls = message.toolCalls ?? [];
+    if (!message.metrics && !calls.length) return;
+    body.replaceChildren();
+    let offset = 0;
+    // 旧记录没有位置，无法反推当时顺序：保留正文在前、工具在后的显示。
+    const positioned = calls.every(call => Number.isInteger(call.textOffset) && call.textOffset >= 0 && call.textOffset <= message.content.length) &&
+        calls.every((call, index) => index === 0 || call.textOffset >= calls[index - 1].textOffset);
+    for (const call of calls) {
+        const end = positioned ? call.textOffset : message.content.length;
+        if (end > offset) appendModelText(body, message.content.slice(offset, end));
+        body.append(toolCard(call));
+        offset = end;
+    }
+    if (offset < message.content.length) appendModelText(body, message.content.slice(offset));
+    if (message.metrics) {
+        const summary = document.createElement('p');
+        summary.className = 'turn-summary';
+        summary.textContent = `总耗时 ${duration(message.metrics.durationMs)} · ${usageText(message.metrics.usage)}`;
+        body.append(summary);
+    }
 }
 const loadConversation = (id) => request(`/api/conversations/${encodeURIComponent(id)}`);
 function acceptConversation(conversation) {
-    clearTools();
     current = conversation;
     needsSync = false;
     remember(current);
@@ -280,9 +301,9 @@ form.addEventListener('submit', async event => {
     setStatus('正在发送，请等待本轮完成…');
     let submitted = false;
     let answer;
-    let partial = "";
+    let textBlock;
+    let blockText = "";
     let renderTimer;
-    clearTools();
     try {
         if (!current) acceptConversation(await request('/api/conversations', {}));
         if (!current.messages.length) messages.replaceChildren();
@@ -290,24 +311,35 @@ form.addEventListener('submit', async event => {
         $('#pending').hidden = false;
         submitted = true;
         answer = addMessage('assistant', '');
+        answer.replaceChildren();
         activeRun = new AbortController();
         stopButton.hidden = false;
         stopButton.disabled = false;
         const data = await requestStream({ conversationId: current.id, message }, event => {
             if (event.type === 'delta') {
-                partial += event.text;
+                if (!textBlock) { textBlock = appendModelText(answer, ''); blockText = ''; }
+                blockText += event.text;
                 $('#pending').hidden = true;
                 setStatus('正在生成…');
                 // 合并高频片段，减少重复 Markdown 渲染。
                 if (!renderTimer) renderTimer = setTimeout(() => {
                     renderTimer = undefined;
-                    renderBody(answer, 'assistant', partial);
+                    renderBody(textBlock, 'assistant', blockText);
                     messages.scrollTop = messages.scrollHeight;
                 }, 40);
-            } else if (event.type === 'tool') showTool(event);
+            } else if (event.type === 'tool') {
+                if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
+                if (textBlock) renderBody(textBlock, 'assistant', blockText);
+                answer.append(toolCard(event));
+                textBlock = undefined;
+                blockText = '';
+                $('#pending').hidden = true;
+                setStatus(`工具 ${event.name} 已返回，正在继续生成…`);
+                messages.scrollTop = messages.scrollHeight;
+            }
         }, activeRun.signal);
         if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
-        current.messages.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply, toolCalls: data.toolCalls ?? [] });
+        current.messages.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply, toolCalls: data.toolCalls ?? [], metrics: data.metrics });
         current.title = data.title ?? current.title;
         remember(current);
         renderMessages();
@@ -316,7 +348,10 @@ form.addEventListener('submit', async event => {
     } catch (error) {
         if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
         if (activeRun?.signal.aborted) {
-            if (answer) renderBody(answer, 'assistant', partial + '\n\n[已停止，内容可能不完整]');
+            if (answer) {
+                if (textBlock) renderBody(textBlock, 'assistant', blockText);
+                appendModelText(answer, '\n\n[已停止，内容可能不完整]');
+            }
             try {
                 const saved = await loadConversation(current.id);
                 const completed = saved.messages.length > current.messages.length;

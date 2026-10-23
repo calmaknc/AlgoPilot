@@ -11,11 +11,12 @@ test('流接口：提前收到片段、工具事件、保存后 done、失败无
     const dir = await mkdtemp(join(tmpdir(), 'agent-stream-'));
     let release;
     let gate;
-    const service = createAgentService({ directory: pathToFileURL(dir + '/'), runModel: async (messages, chunk, tool) => {
+    const service = createAgentService({ directory: pathToFileURL(dir + '/'), runModel: async (messages, chunk, tool, signal, model) => {
         chunk('你好\n');
         if (messages.at(-1).content === '失败') throw new Error('failed');
         await gate;
         tool('run_python', '{"code":"print(3)","stdin":""}', '{"ok":true,"stdout":"3\\n","executionSucceeded":true}');
+        model({ round: 1, durationMs: 20, usage: { inputTokens: 12, outputTokens: 3, totalTokens: 15 } });
         chunk('世界');
         return '你好\n世界';
     } });
@@ -37,9 +38,11 @@ test('流接口：提前收到片段、工具事件、保存后 done、失败无
         release();
         while (true) { const { value, done } = await reader.read(); if (done) break; text += new TextDecoder().decode(value); }
         const events = text.trim().split('\n').map(JSON.parse);
-        assert.deepEqual(events.map(e => e.type), ['delta', 'tool', 'delta', 'done']);
+        assert.deepEqual(events.map(e => e.type), ['delta', 'tool', 'model', 'delta', 'done']);
+        assert.equal(events.at(-1).metrics.usage.totalTokens, 15);
+        assert.equal(events.find(e => e.type === 'model').durationMs, 20);
         assert.equal(events.at(-1).reply, '你好\n世界');
-        assert.deepEqual(events.at(-1).toolCalls, [{ name: 'run_python', argumentsJson: '{"code":"print(3)","stdin":""}' }]);
+        assert.deepEqual(events.at(-1).toolCalls, [{ name: 'run_python', argumentsJson: '{"code":"print(3)","stdin":""}', textOffset: 3 }]);
         assert.equal((await service.getConversation(conversation.id)).messages.length, 2);
         const failure = await post('失败');
         const failureEvents = (await failure.text()).trim().split('\n').map(JSON.parse);

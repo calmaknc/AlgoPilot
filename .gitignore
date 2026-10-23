@@ -1,3 +1,37 @@
-.env
+# Dependencies
 node_modules/
+
+# Local environment variables (keep shareable templates)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.template
+
+# Local conversations, practice notes, and exports
 data/
+
+# Build output and caches
+dist/
+build/
+*.tsbuildinfo
+.cache/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs and temporary files
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
+
+# macOS metadata
+.DS_Store
+._*

@@ -5,14 +5,16 @@ import test from 'node:test';
 process.env.DEEPSEEK_API_KEY = 'local-test-placeholder';
 process.env.DEEPSEEK_MODEL = 'local-test-model';
 let handler;
+let webHandler;
 globalThis.fetch = async (url, options) => {
+    if (String(url).startsWith('https://api.deepseek.com/v1/tools/')) return webHandler(url, JSON.parse(options.body));
     assert.equal(String(url), 'https://api.deepseek.com/responses');
     return handler(JSON.parse(options.body), options);
 };
 const { requestModel } = await import('../src/agent/runner.ts');
 const { executeTool } = await import('../src/tools/index.ts');
 
-function response(output, text = '', status = 'completed') {
+function response(output, text = '', status = 'completed', usage) {
     const events = [];
     for (const delta of text) {
         events.push({ type: 'response.output_text.delta', delta });
@@ -21,7 +23,7 @@ function response(output, text = '', status = 'completed') {
         events.push({
             type: `response.${status}`,
             response: {
-                status, output,
+                status, output, usage,
                 incomplete_details: { reason: 'max_output_tokens' },
                 error: { message: '模拟失败' }
             }
@@ -146,4 +148,72 @@ test('模型取消：SDK 中断活动流，不执行后续工具或下一轮', a
     await assert.rejects(requestModel([{ role: 'user', content: '测试取消' }], () => controller.abort(), () => tools++, controller.signal));
     assert.equal(requests, 1);
     assert.equal(tools, 0);
+});
+
+
+test('记录各模型轮次真实 usage、工具 ID/状态/耗时，缺失 usage 保持未知', async () => {
+    let requests = 0;
+    const models = [];
+    const tools = [];
+    handler = () => {
+        requests++;
+        if (requests === 1) return response([
+            call('bad-json', '{'), call('valid-time', '{"timezone":"UTC"}')
+        ], '', 'completed', { input_tokens: 100, output_tokens: 20, total_tokens: 120 });
+        return response([], '完成');
+    };
+    await requestModel([{ role: 'user', content: '查询' }], undefined,
+        (name, args, output, record) => tools.push(record), undefined, record => models.push(record));
+    assert.deepEqual(models.map(m => m.round), [1, 2]);
+    assert.deepEqual(models[0].usage, { inputTokens: 100, outputTokens: 20, totalTokens: 120 });
+    assert.equal(models[1].usage, null);
+    assert.ok(models.every(m => m.durationMs >= 0));
+    assert.deepEqual(tools.map(t => [t.callId, t.round, t.status]), [
+        ['bad-json', 1, 'error'], ['valid-time', 1, 'success']
+    ]);
+    assert.ok(tools.every(t => t.durationMs >= 0));
+
+    const { sandboxService } = await import('../src/sandbox/service.ts');
+    const original = sandboxService.run;
+    sandboxService.run = async () => ({ status: 'completed', stdout: '', stderr: 'ValueError', exitCode: 1, durationMs: 2 });
+    try {
+        requests = 0;
+        handler = () => ++requests === 1
+            ? response([call('runtime-error', '{"code":"raise ValueError()"}', 'run_python')])
+            : response([], '运行异常');
+        await requestModel([{ role: 'user', content: '运行' }], undefined,
+            (name, args, output, record) => {
+                assert.equal(JSON.parse(output).ok, true);
+                assert.equal(record.status, 'error');
+                assert.match(record.resultStatus, /退出码 1/);
+            });
+    } finally { sandboxService.run = original; }
+});
+
+
+test('Agent 联网链路：搜索→抓取→正文回答，工具调用回传与记录', async () => {
+    let requests = 0;
+    const tools = [];
+    webHandler = (url, body) => {
+        if (url.endsWith('/search')) return Response.json({results:[{title:'1. 两数之和',url:'https://leetcode.cn/problems/two-sum/',summary:'摘要',content:''}]});
+        assert.equal(body.url, 'https://leetcode.cn/problems/two-sum/');
+        return Response.json({title:'1. 两数之和',content:'题干：找到两个整数。示例：nums=[2,7], target=9。约束：不能重复使用同一元素。'});
+    };
+    handler = body => {
+        requests++;
+        assert.ok(body.tools.some(tool => tool.name === 'web_search'));
+        if (requests === 1) return response([call('search-1', '{"query":"1 site:leetcode.cn"}', 'web_search')]);
+        const last = body.input.at(-1);
+        assert.equal(JSON.parse(last.output).ok, true);
+        if (requests === 2) {
+            assert.equal(last.call_id, 'search-1');
+            return response([call('fetch-1', '{"url":"https://leetcode.cn/problems/two-sum/"}', 'read_webpage')]);
+        }
+        assert.equal(last.call_id, 'fetch-1');
+        assert.match(JSON.parse(last.output).content, /约束/);
+        return response([], '根据题目页，不能重复使用同一元素。');
+    };
+    await requestModel([{role:'user',content:'查第1题'}], undefined, (name, args, output, record) => tools.push(record));
+    assert.equal(requests, 3);
+    assert.deepEqual(tools.map(t => [t.name,t.status,t.round]), [['web_search','success',1],['read_webpage','success',2]]);
 });

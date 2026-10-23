@@ -123,12 +123,14 @@ export function createExpressApp(
             const result = await service.run(body.conversationId, body.message, {
                 signal: controller.signal,
                 onChunk: text => send({ type: 'delta', text }),
-                onTool: (name, argumentsJson, output) => send({ type: 'tool', name, argumentsJson, output }),
+                onTool: (name, argumentsJson, output, record) => send({ type: 'tool', name, argumentsJson, output, ...record }),
+                onModelCall: record => send({ type: 'model', ...record }),
             });
             // run 返回前已经保存，done 才代表本轮真正完成。
             send({ type: 'done', conversationId: result.conversationId,
                 reply: result.reply, title: result.conversation.title,
-                toolCalls: result.conversation.messages.at(-1)?.toolCalls ?? [] });
+                toolCalls: result.conversation.messages.at(-1)?.toolCalls ?? [],
+                metrics: result.conversation.messages.at(-1)?.metrics });
         } catch (error) {
             if (controller.signal.aborted) return;
             const failure = error instanceof AppError ? error : new AppError(500, 'INTERNAL_ERROR', '服务器内部错误');
