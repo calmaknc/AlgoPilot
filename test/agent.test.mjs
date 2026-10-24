@@ -14,6 +14,26 @@ globalThis.fetch = async (url, options) => {
 const { requestModel } = await import('../src/agent/runner.ts');
 const { executeTool } = await import('../src/tools/index.ts');
 
+test('评测可以注入独立工具注册表，模型调用不会落回默认工具', async () => {
+    let executed = false;
+    handler = body => {
+        assert.deepEqual(body.tools.map(tool => tool.name), ['isolated_tool']);
+        if (!executed) return response([call('isolated', '{}', 'isolated_tool')]);
+        assert.equal(body.input.at(-1).output, '{"ok":true,"isolated":true}');
+        return response([], '隔离工具执行完成');
+    };
+    const tools = {
+        toolDefinitions: [{ type: 'function', name: 'isolated_tool', description: 'test', parameters: {} }],
+        executeTool: async name => {
+            assert.equal(name, 'isolated_tool');
+            executed = true;
+            return '{"ok":true,"isolated":true}';
+        },
+    };
+    assert.equal(await requestModel([{role:'user',content:'test'}], undefined, undefined, undefined, undefined, tools), '隔离工具执行完成');
+    assert(executed);
+});
+
 function response(output, text = '', status = 'completed', usage) {
     const events = [];
     for (const delta of text) {

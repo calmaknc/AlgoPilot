@@ -31,7 +31,7 @@ function readSingleStringArgument(args: unknown, key: string): string {
 const timeDefinition: FunctionTool = {
     type: 'function',
     name: 'get_current_time',
-    description: '查询指定 IANA 时区的当前日期和时间。用户询问当前时间时使用。',
+    description: '查询指定 IANA 时区的当前日期和时间。',
     parameters: {
         type: 'object',
         properties: {
@@ -78,11 +78,11 @@ export function createPythonTool(service: SandboxService = sandboxService): Regi
         definition: {
             type: 'function',
             name: 'run_python',
-            description: '在受限 Python 容器中运行完整脚本并返回 stdout、stderr、exitCode 和 status。仅在用户要求运行、验证代码或测试用例时使用。仅支持 Python 标准库；必须显式写调用及 print。结果仅代表此次输入的运行情况，不代表通过官方测试。',
+            description: '在受限 Python 容器中运行完整脚本并返回 stdout、stderr、exitCode 和 status。仅支持 Python 标准库；必须显式写调用及 print。',
             parameters: {
                 type: 'object',
                 properties: {
-                    code: { type: 'string', description: '完整 Python 脚本，最多 32 KiB；包含需要的函数调用与 print，不要传 Markdown 代码围栏。' },
+                    code: { type: 'string', description: '完整 Python 脚本，最多 32 KiB；包含需要的函数调用与 print。' },
                     stdin: { type: 'string', description: '程序的标准输入，最多 16 KiB；不需要输入时传空字符串。' },
                 },
                 required: ['code', 'stdin'],
@@ -115,7 +115,7 @@ const practiceNoteSchema = {
             properties: { thought: stringField, code: stringField, language: stringField, solution: stringField },
             required: ['thought', 'code', 'language'] },
         summary: { type: 'object', additionalProperties: false,
-            description: 'Agent 整理的内容；未知用空字符串或空数组，不把推测写为运行验证结论。',
+            description: 'Agent 整理的内容；未知用空字符串或空数组。',
             properties: { approach: stringField, tags: stringsField, timeComplexity: stringField,
                 spaceComplexity: stringField, pitfalls: stringsField, reviewPoints: stringsField },
             required: ['approach', 'tags', 'timeComplexity', 'spaceComplexity', 'pitfalls', 'reviewPoints'] },

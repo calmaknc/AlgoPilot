@@ -35,3 +35,5 @@ temp/
 # macOS metadata
 .DS_Store
 ._*
+
+evals/
