@@ -36,4 +36,7 @@ temp/
 .DS_Store
 ._*
 
-evals/
+# Keep reusable eval sources; ignore local evidence and generated reports
+evals/**/runs/
+evals/**/REPORT-*.md
+evals/**/current-results.json

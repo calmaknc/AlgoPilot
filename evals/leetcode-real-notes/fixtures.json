@@ -1,0 +1,49 @@
+[
+  {
+    "schemaVersion": 2,
+    "id": "eval-49",
+    "createdAt": "2026-10-23T00:00:00.000Z",
+    "updatedAt": "2026-10-23T00:00:00.000Z",
+    "title": "字母异位词分组",
+    "problem": {
+      "number": 49
+    },
+    "content": "## 原始思路与状态\n\n建立字典，key 表示组成单词的字母及其出现次数，value 是该组字符串列表。\n本人重写的计数数组版已提交通过，但未提供该重写源码。下列代码是最初 Counter 版，原版提交结果未反馈。\n\n## 原始代码\n\n```python\nclass Solution:\n    def groupAnagrams(self, strs: list[str]) -> list[list[str]]:\n        record = {}\n        for s in strs:\n            unique = tuple(sorted(Counter(s).items()))\n            if unique in record:\n                record[unique].append(s)\n            else:\n                record[unique] = [s]\n\n        return list(record.values())\n```\n\n## 总结\n\n用字符计数构造可哈希的规范化表示。\n\n- 不能丢失字符出现次数；不能把助手参考代码冒充本人提交源码。\n",
+    "tags": [
+      "字符串",
+      "哈希表",
+      "计数"
+    ]
+  },
+  {
+    "schemaVersion": 2,
+    "id": "eval-3886",
+    "createdAt": "2026-10-23T00:00:00.000Z",
+    "updatedAt": "2026-10-23T00:00:00.000Z",
+    "title": "可排序整数求和",
+    "problem": {
+      "number": 3886
+    },
+    "content": "## 原始思路与状态\n\n下方代码 是本人最初的错误实现，保留了末段漏记、有序块误判及块间边界比较错误。助手后来提供过修正版并进行了本地验证，但修正版代码未保存在这条记录中。未记录本人复现修正版或平台提交结果。\n\n## 原始代码\n\n```python\nclass Solution:\n    def sortableIntegers(self, nums: list[int]) -> int:\n        n = len(nums)\n        # 如何判断一个子数组能够通过循环移位来变得有序？\n        # 一定是分成两个非递减序列，且左边的min要大于等于右边的max\n        def check(nums, i, j):\n            # 判断是否能构成两个非递减序列\n            maxx = -1\n            minn = float('inf')\n            total_max = -1\n            seg = []\n            for idx in range(i, j):\n                maxx = max(maxx, nums[idx])\n                minn = min(minn, nums[idx])\n                total_max = max(total_max, nums[idx])\n                if nums[idx] > nums[idx + 1]:\n                    seg.append((minn, maxx))\n                    maxx, minn = -1, float('inf')\n\n            maxx = max(maxx, nums[j])\n            minn = min(minn, nums[j])\n            total_max = max(total_max, nums[j])\n            if nums[j - 1] > nums[j]:\n                seg.append((minn, maxx))\n\n            return len(seg) == 2 and seg[0][0] >= seg[1][1], total_max\n\n        ans = 0\n        for k in range(1, n + 1):\n            if n % k == 0:\n                last_max = -1\n                flag = True\n                # nums[i * k: (i + 1) * k]\n                for i in range(0, n, k):\n                    curr_seg_valid_flag, curr_max = check(nums, i, i + k - 1)\n                    if not curr_seg_valid_flag or curr_max < last_max:\n                        last_max = curr_max\n                        flag = False\n                        break\n                    last_max = curr_max\n\n                if flag:\n                    ans += k\n\n        return ans\n```\n\n## 总结\n\n检查块内能否循环移位排序，以及块与块的拼接边界。\n\n- 末段漏记；已经有序的块误判；块间比较两个最大值不能保证整体有序。\n",
+    "tags": [
+      "数组",
+      "循环移位",
+      "边界条件"
+    ]
+  },
+  {
+    "schemaVersion": 2,
+    "id": "eval-3644",
+    "createdAt": "2026-10-23T00:00:00.000Z",
+    "updatedAt": "2026-10-23T00:00:00.000Z",
+    "title": "排序排列",
+    "problem": {
+      "number": 3644
+    },
+    "content": "## 原始思路与状态\n\n本人未提供代码。经助手讲解后表示本题学习结束。助手参考代码经过本地验证，未反馈平台提交。\n\n## 总结\n\n对错位元素的值求按位与，并用公共值作为中转证明可行。\n\n- 学习结束不等于平台提交通过。\n",
+    "tags": [
+      "位运算",
+      "排列"
+    ]
+  }
+]

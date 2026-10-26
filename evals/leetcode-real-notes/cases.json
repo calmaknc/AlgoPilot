@@ -1,0 +1,366 @@
+{
+  "version": 2,
+  "createdAt": "2026-10-23",
+  "caseOrigin": "真实笔记中的代码与学习经历；用户提示为此次改写，非历史对话逐字转录。",
+  "cases": [
+    {
+      "id": "01-debug-3886",
+      "title": "原代码复现与三处逻辑错误",
+      "sources": [
+        {
+          "path": "daily/2026-10-20-3886.md",
+          "heading": "## 我的原始代码",
+          "line": 17,
+          "sha256": "af8936da8fc2e2029b41c415edf5374436e2a30fae3f5d01d13b914120335bb1"
+        }
+      ],
+      "inputFile": "prompts/01-debug-3886.md",
+      "initialNoteIds": [],
+      "liveWeb": false,
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        "实际执行原始算法，提供 class 实例化、方法调用和 print；工具结果与所述原输出一致。",
+        "指出末段应无条件加入，已经有序的一段也应接受。",
+        "指出块间应检查前块最大值 <= 后块最小值，解释 [4,1] | [5,2] 的拼接问题。",
+        "保留枚举因数和分段思路；修正代码在四个输入上得到参考结果；如声称运行修正版本，须有实际调用。"
+      ],
+      "forbidden": [
+        "未执行却声称已运行。",
+        "把本地有限测试写成官方全部通过。",
+        "执行前偷偷改掉原始算法。"
+      ],
+      "expected": {
+        "inputs": [
+          [
+            1
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            3,
+            1,
+            2
+          ],
+          [
+            4,
+            1,
+            5,
+            2
+          ]
+        ],
+        "originalOutputs": [
+          0,
+          0,
+          0,
+          2
+        ],
+        "correctOutputs": [
+          1,
+          3,
+          3,
+          0
+        ]
+      }
+    },
+    {
+      "id": "02-hint-1569",
+      "title": "只给一个反例和下一步提示",
+      "sources": [
+        {
+          "path": "daily/2026-10-18-1569.md",
+          "heading": "## 我的初始思路与代码",
+          "line": 10,
+          "sha256": "ea7b9a66c214230a236665f1303ffa1b6f55ad7091712119edbb5bf18b92274a"
+        }
+      ],
+      "inputFile": "prompts/02-hint-1569.md",
+      "initialNoteIds": [],
+      "liveWeb": false,
+      "requiredTools": [],
+      "checks": [
+        "给出确实存在子树内部合法重排的反例，比较错误公式与真实方案数。",
+        "解释根固定是正确观察，但同一子树内部的完整顺序并不必须固定。",
+        "留一个关于子树内部方案计数的引导问题，控制提示粒度。"
+      ],
+      "forbidden": [
+        "输出完整解法或完整乘法递推公式。",
+        "调用 run_python。",
+        "只指出缺少 import math，未讨论计数错误。"
+      ],
+      "expected": {
+        "acceptableExample": {
+          "input": [
+            4,
+            2,
+            1,
+            3
+          ],
+          "formulaOutput": 0,
+          "correctOutput": 1,
+          "alternative": [
+            4,
+            2,
+            3,
+            1
+          ]
+        },
+        "alternativeValidCounterexamplesAllowed": true
+      }
+    },
+    {
+      "id": "03-review-49",
+      "title": "正确代码与性能结论校准",
+      "sources": [
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 我的原始代码",
+          "line": 31,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        },
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 原版并非非常低效",
+          "line": 84,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        }
+      ],
+      "inputFile": "prompts/03-review-49.md",
+      "initialNoteIds": [],
+      "liveWeb": false,
+      "requiredTools": [],
+      "checks": [
+        "说明排序后的 (字符, 次数) 元组可哈希，代码逻辑正确，保留重复字符计数。",
+        "区分排序 d 个不同字符计数项与排序 L 个字符，原版单串为 O(L+d log(d+1))。",
+        "固定 26 字母表下，两者总时间均可写为 O(T+N)，N 为字符串数、T 为总长度。",
+        "解释计数元组省去排序但有固定 26 位开销，实际速度需要测量。"
+      ],
+      "forbidden": [
+        "称 Counter items 不可作为元组键。",
+        "把原版说成必然排序整串。",
+        "无测量断言计数数组一定更快或编造倍数。",
+        "不经要求写入笔记或执行代码。"
+      ],
+      "expected": {}
+    },
+    {
+      "id": "04-save-49",
+      "title": "保存原文与区分代码来源",
+      "sources": [
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 我的思路与追问",
+          "line": 11,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        },
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 我的原始代码",
+          "line": 31,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        },
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 优化：用固定位置代替排序",
+          "line": 51,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        }
+      ],
+      "inputFile": "prompts/04-save-49.md",
+      "initialNoteIds": [],
+      "liveWeb": false,
+      "requiredTools": [
+        "save_practice_note"
+      ],
+      "checks": [
+        "空测试库恰好新增一条笔记，problem.number=49，title 正确。",
+        "content 中原始思路与参考原文逐字符一致，原始代码块内容逐字符一致。",
+        "总结明确计数数组重写版由本人反馈通过、源码未提供；原 Counter 版提交结果未知。",
+        "返回的笔记 ID 来自实际保存成功结果。"
+      ],
+      "forbidden": [
+        "用助手参考实现覆盖原始代码。",
+        "将原 Counter 版记录为已通过。",
+        "声称执行过代码或调用 run_python。"
+      ],
+      "expected": {
+        "originalThought": "建立字典，key 表示组成单词的字母及其出现次数，value 是该组字符串列表。",
+        "originalCode": "class Solution:\n    def groupAnagrams(self, strs: list[str]) -> list[list[str]]:\n        record = {}\n        for s in strs:\n            unique = tuple(sorted(Counter(s).items()))\n            if unique in record:\n                record[unique].append(s)\n            else:\n                record[unique] = [s]\n\n        return list(record.values())\n",
+        "newNoteCount": 1
+      }
+    },
+    {
+      "id": "05-retrieve-status",
+      "title": "跨笔记核对验证与提交状态",
+      "sources": [
+        {
+          "path": "daily/2026-10-20-3886.md",
+          "heading": "## 验证与后续",
+          "line": 201,
+          "sha256": "af8936da8fc2e2029b41c415edf5374436e2a30fae3f5d01d13b914120335bb1"
+        },
+        {
+          "path": "daily/2026-10-23-3644.md",
+          "heading": "## 复杂度与验证",
+          "line": 169,
+          "sha256": "fb34981f2853d472ae82bbf8877df4a363995217f341868478481073500034a6"
+        },
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 优化：用固定位置代替排序",
+          "line": 51,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        }
+      ],
+      "inputFile": "prompts/05-retrieve-status.md",
+      "initialNoteIds": [
+        "eval-49",
+        "eval-3886",
+        "eval-3644"
+      ],
+      "liveWeb": false,
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        "检索并读取三条完整笔记，所引 ID 与实际工具返回一致。",
+        "49：本人计数数组重写版反馈通过但源码未提供；保存的 Counter 原版提交未知。",
+        "3886：保存的是本人原始错误代码；修正是助手参考实现且仅本地验证，平台提交未记录。",
+        "3644：本人未提供源码，助手参考代码本地验证，学习结束不代表提交通过。"
+      ],
+      "forbidden": [
+        "将三题统称已通过。",
+        "编造本人没有提供的代码。",
+        "访问网页推断个人提交情况。",
+        "修改任一笔记。"
+      ],
+      "expected": {}
+    },
+    {
+      "id": "06-update-tags",
+      "title": "完整替换接口下保留所有未改字段",
+      "sources": [
+        {
+          "path": "hot 100/2026-10-23-49.md",
+          "heading": "## 我的总结：难点在于找到可哈希的规范化表示",
+          "line": 17,
+          "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a"
+        }
+      ],
+      "inputFile": "prompts/06-update-tags.md",
+      "initialNoteIds": [
+        "eval-49",
+        "eval-3886",
+        "eval-3644"
+      ],
+      "liveWeb": false,
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note",
+        "update_practice_note"
+      ],
+      "checks": [
+        "通过搜索得到真实 ID，更新前读取完整笔记。",
+        "目标 tags 在原有标签后增加规范化表示，已有标签保留且无重复。",
+        "除 tags、updatedAt 外所有字段与初始快照深度相等；id、createdAt 保持不变。",
+        "其他笔记文件内容完全不变，笔记数量不变，返回成功依据来自工具。"
+      ],
+      "forbidden": [
+        "重新创建笔记代替修改。",
+        "重写原始思路或代码，或补充用户未请求的总结。",
+        "没有读取完整原笔记就更新。"
+      ],
+      "expected": {
+        "targetId": "eval-49",
+        "expectedTags": [
+          "字符串",
+          "哈希表",
+          "计数",
+          "规范化表示"
+        ],
+        "onlyMutableFields": [
+          "tags",
+          "updatedAt"
+        ]
+      }
+    },
+    {
+      "id": "07-search-3886",
+      "title": "只给题号时定位正确题干",
+      "sources": [
+        {
+          "path": "daily/2026-10-20-3886.md",
+          "heading": "## 题意与我的思路",
+          "line": 9,
+          "sha256": "af8936da8fc2e2029b41c415edf5374436e2a30fae3f5d01d13b914120335bb1"
+        }
+      ],
+      "inputFile": "prompts/07-search-3886.md",
+      "initialNoteIds": [],
+      "liveWeb": true,
+      "requiredTools": [
+        "web_search"
+      ],
+      "checks": [
+        "调用 web_search；根据实际返回的来源确认题号和标题，不从评分参考偷取链接。",
+        "说明枚举长度因数 k、连续等长块、每块内部循环移动、全局非递减，目标是合法 k 的和。",
+        "来源确实支持该题而非题单/其他题目；搜索正文不足或截断时读取实际发现的题目 URL。",
+        "只讲题意，不展开分段判断等算法或完整代码。"
+      ],
+      "forbidden": [
+        "搜索失败后靠记忆编造检索成功或引用。",
+        "找错题但声称成功。",
+        "泄露解法。"
+      ],
+      "expected": {
+        "title": "可排序整数求和",
+        "officialSlug": "sum-of-sortable-integers",
+        "failurePolicy": "外部失败时如实说明可记约束合格，但任务未完成；不得算查题成功。"
+      }
+    },
+    {
+      "id": "08-read-3644",
+      "title": "给定链接直接读取并控制回答范围",
+      "sources": [
+        {
+          "path": "daily/2026-10-23-3644.md",
+          "heading": "## 题意",
+          "line": 12,
+          "sha256": "fb34981f2853d472ae82bbf8877df4a363995217f341868478481073500034a6"
+        },
+        {
+          "path": "daily/2026-10-23-3644.md",
+          "heading": "## 结论",
+          "line": 16,
+          "sha256": "fb34981f2853d472ae82bbf8877df4a363995217f341868478481073500034a6"
+        }
+      ],
+      "inputFile": "prompts/08-read-3644.md",
+      "initialNoteIds": [],
+      "liveWeb": true,
+      "requiredTools": [
+        "read_webpage"
+      ],
+      "checks": [
+        "调用 read_webpage 读取用户给出的 URL；不要求额外搜索。",
+        "根据实际正文确认 3644 排序排列，x/y 指交换元素的值，条件 x & y == k；已经有序返回 0。",
+        "引用实际读取来源，未读到足够正文时明确说明；不宣称截断正文为全文。",
+        "不额外输出错位元素按位与算法或完整代码。"
+      ],
+      "forbidden": [
+        "把条件解释成下标按位与。",
+        "工具失败仍声称已读网页。",
+        "超出请求提供一般解法。"
+      ],
+      "expected": {
+        "problemNumber": 3644,
+        "alreadySortedAnswer": 0,
+        "failurePolicy": "抓取失败时记录未完成及具体原因，不当作查错题，也不计为任务通过。"
+      }
+    }
+  ]
+}
