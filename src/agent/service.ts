@@ -2,12 +2,15 @@ import type { UserMessage, AssistantMessage, Message, ToolCallRecord, ModelCallR
 import type { Conversation } from '../storage/conversations.ts';
 import { createConversation, loadConversation, initializeConversation, appendMessages, updateConversationTitle, setLastConversation } from '../storage/conversations.ts';
 import { AppError } from '../shared/errors.ts';
+import type { MemoryEvent } from './memory.ts';
+import { ContextLimitError } from './context-compression.ts';
 
 export type AgentCallbacks = {
     signal?: AbortSignal;
     onChunk?: (text: string) => void;
     onTool?: (name: string, argumentsJson: string, output: string, record?: ToolCallRecord) => void;
     onModelCall?: (record: ModelCallRecord) => void;
+    onMemory?: (event: MemoryEvent) => void;
 };
 
 export type ModelRunner = (
@@ -15,34 +18,29 @@ export type ModelRunner = (
     onChunk?: AgentCallbacks['onChunk'],
     onTool?: AgentCallbacks['onTool'],
     signal?: AbortSignal,
-    onModelCall?: AgentCallbacks['onModelCall']
+    onModelCall?: AgentCallbacks['onModelCall'],
+    onMemory?: AgentCallbacks['onMemory']
 ) => Promise<string>;
 
 export type AgentResult = {
     conversationId: string;
     reply: string;
     conversation: Conversation;
+    memoryEvents: MemoryEvent[];
 };
 
 /** 工厂函数：把依赖和共享状态放在一个地方，终端、HTTP 和测试可复用。 */
 export function createAgentService(options: { directory?: URL; runModel?: ModelRunner } = {}) {
     // 测试时可以传入临时目录和模拟模型，避免修改真实历史或支付 API 费用。
     const directory = options.directory;
-    const runModel: ModelRunner = options.runModel ?? (async (...args) => {
+    const runModel: ModelRunner = options.runModel ?? (async (messages, onChunk, onTool, signal, onModelCall, onMemory) => {
         const { requestModel } = await import('./runner.ts');
-        return requestModel(...args);
+        return requestModel(messages, onChunk, onTool, signal, onModelCall, undefined, { onMemory });
     });
 
-    // TODO 4：用这个集合标记正在生成的会话。同一会话冲突时返回 409。
     const busy = new Set<string>();
 
     async function newConversation(title = '新会话'): Promise<Conversation> {
-        // TODO 1：
-        // 1. 检查 title 是非空字符串，trim 后不超过 100 个字符。
-        // 2. 调用 createConversation()，设置标题。
-        // 3. await initializeConversation(conversation, directory)。
-        // 4. 返回已保存的 conversation。
-        // 提示：参数错误可抛出 new AppError(400, 'INVALID_TITLE', '...')。
         if (typeof title !== 'string' || title.trim().length <= 0 || title.trim().length > 100) {
             throw new AppError(400, 'INVALID_TITLE', 'title必须是1～100个字符的字符串')
         }
@@ -54,11 +52,6 @@ export function createAgentService(options: { directory?: URL; runModel?: ModelR
     }
 
     async function getConversation(id: string): Promise<Conversation> {
-        // TODO 2：
-        // 1. 校验 id 格式，不能把任意路径作为文件名。
-        // 2. 调用 loadConversation(id, directory)。
-        // 3. 文件不存在转换成 404；文件损坏等存储错误转换成 500。
-        // 注意：不应在这里自动创建缺失的会话。
         if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) {
             throw new AppError(400, 'INVALID_CONVERSATION_ID', '会话 ID 只能包含字母、数字、下划线和短横线，长度为 1～128');
         }
@@ -80,15 +73,6 @@ export function createAgentService(options: { directory?: URL; runModel?: ModelR
         message: string,
         callbacks: AgentCallbacks = {}
     ): Promise<AgentResult> {
-        // TODO 3：先完成不含并发控制的基本链路。
-        // 1. 校验 message，trim 后长度为 1～10000。
-        // 2. 加载会话，构造“历史 + 当前用户消息”的独立请求数组。
-        // 3. await runModel(input, callbacks.onChunk, callbacks.onTool, callbacks.signal)。
-        // 4. 模型成功且回复非空后，将一轮问答加入会话。
-        // 5. 按需设置会话标题，保存后返回 { conversationId, reply, conversation }。
-        // 模型失败时转换成 502，不能把半轮消息保存到历史。
-        // 保存失败应报 500，不能报告交互已成功保存。
-        //
         if (typeof message !== 'string' || message.trim().length < 1 || message.trim().length > 10000) {
             throw new AppError(400, 'INVALID_MESSAGE', 'message必须是长度为1～10000的字符串');
         }
@@ -109,6 +93,7 @@ export function createAgentService(options: { directory?: URL; runModel?: ModelR
             const input = [...conversation.messages, userMessage].map(({ role, content }) => ({ role, content }));
             const toolCalls: ToolCallRecord[] = [];
             const modelCalls: ModelCallRecord[] = [];
+            const memoryEvents: MemoryEvent[] = [];
             const started = performance.now();
             let streamedText = '';
 
@@ -124,13 +109,17 @@ export function createAgentService(options: { directory?: URL; runModel?: ModelR
                 }, callbacks.signal, record => {
                     modelCalls.push(record);
                     callbacks.onModelCall?.(record);
+                }, event => {
+                    memoryEvents.push(event);
+                    callbacks.onMemory?.(event);
                 });
 
                 if (typeof reply !== 'string' || reply.trim().length === 0) {
                     throw new Error('模型没有返回有效文本');
                 }
-            } catch {
+            } catch (error) {
                 callbacks.signal?.throwIfAborted();
+                if (error instanceof ContextLimitError) throw new AppError(502, 'CONTEXT_LIMIT', error.message);
                 throw new AppError(502, 'MODEL_ERROR', '模型调用失败，本轮未保存');
             }
             // 保存开始前是取消边界；开始写盘后必须等待写入完成。
@@ -160,7 +149,7 @@ export function createAgentService(options: { directory?: URL; runModel?: ModelR
                 throw new AppError(500, 'STORAGE_ERROR', '会话保存失败，请读取历史核对保存状态');
             }
 
-            return {conversationId, reply, conversation};
+            return {conversationId, reply, conversation, memoryEvents};
         } finally {
             busy.delete(conversationId);
         }

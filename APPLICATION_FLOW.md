@@ -10,7 +10,7 @@
 src/
 ├── http/        # server.ts 监听端口，app.ts 路由与中间件
 ├── cli/         # main.ts 终端交互
-├── agent/       # service.ts 一轮交互，runner.ts 模型循环，messages.ts 数据类型
+├── agent/       # service.ts 一轮交互，runner.ts 模型循环，messages.ts 数据类型，context-compression.ts 上下文压缩，memory*.ts 长期记忆
 ├── tools/
 │   ├── index.ts            # 唯一工具注册清单
 │   ├── implementations.ts  # 工具描述、参数校验和实现入口
@@ -43,7 +43,7 @@ Python 工具还需要本机 Docker 可用且已准备 `python:3.12-slim` 镜像
 
 联网工具复用 `.env` 中的 `DEEPSEEK_API_KEY`，不需要额外搜索服务 Key。客户端位于 `src/tools/web-client.ts`，没有独立 `src/web/` 目录。
 
-数据位于被 Git 忽略的 `data/conversations/`、`data/practice-notes/` 和 `data/exports/`。API 密钥留在服务端，不发给浏览器。
+数据位于被 Git 忽略的 `data/conversations/`、`data/practice-notes-v2/` 和 `data/exports/`。API 密钥留在服务端，不发给浏览器。
 
 ## 2. 从网页到模型的调用链
 
@@ -135,7 +135,7 @@ TokenUsage = { inputTokens, outputTokens, totalTokens }
 
 ## 5. Agent Loop 与工具协议
 
-runner 使用 OpenAI SDK 调用 DeepSeek Responses 接口，模型名来自环境变量。每次交互最多发起 5 次模型请求；SDK 自动重试关闭。
+runner 使用 OpenAI SDK 调用 DeepSeek Responses 接口，模型名来自环境变量。每次交互最多运行 5 轮正常模型/工具循环；上下文超限恢复使用独立的有限重试预算（整个交互共享三个本地阶段、最多三次总结和一次最终裁剪），SDK 自动重试关闭。模型用量统计包含失败请求及总结请求，缺失 usage 时总用量保持未知。
 
 - `response.output_text.delta`：累积文本并通知界面。
 - `response.completed`：读取完整 output 和 usage，记录本次模型耗时。
@@ -160,7 +160,7 @@ runner 使用 OpenAI SDK 调用 DeepSeek Responses 接口，模型名来自环�
 | `save_practice_note` | 保存原始内容与整理结果 |
 | `search_practice_notes` | 按关键词、题号和标签组合搜索 |
 | `get_practice_note` | 按实际 ID 读取全文 |
-| `update_practice_note` | 读取后完整替换，保留身份与创建时间 |
+| `update_practice_note` | 读取后局部更新或追加正文，保留未指定字段、身份与创建时间 |
 | `delete_practice_note` | 删除明确指定的笔记 |
 | `export_practice_note_markdown` | 导出独立 Markdown 快照，返回本机路径 |
 
@@ -196,7 +196,11 @@ Search/Fetch 按请求计费，与模型 Token 分开；当前不自动统计接
 
 ## 7. 笔记检索与持久化
 
-笔记包括 `problem`、`original` 和 `summary`，后端生成 ID、创建时间与更新时间。用户原始代码与思路保持原样，整理结果单独保存。
+笔记使用 `schemaVersion: 2`，包括标题 `title`、自由 Markdown 正文 `content`、标签 `tags`（创建时可省略）和可选题目关联 `problem`。后端生成 ID、创建时间与更新时间。正文上限 32 KiB，不要求固定章节或绑定题目。旧格式不兼容、不迁移；旧目录文件保留但不再读取。
+
+保存与整理分开：仅要求保存时原样记录指定正文；仅要求整理时在对话中展示，不自动写入；要求整理并保存时才保存整理结果，新增解释标识为 Agent 补充。这是模型行为约定，存储层只验证和原样保存传入正文。
+
+更新工具的 `note` 是局部修改对象：省略字段保持不变，`tags: []` 清空标签，`problem: null` 清除题目关联，提供 `problem` 对象则替换关联。`content` 替换正文，`appendContent` 在后端原样拼接（需显式包含换行），二者互斥。检索匹配标题、正文与标签，并返回正文片段；Markdown 导出在正文前添加一级标题：有题号时为 `# 题号. 题目名称`（名称使用笔记 `title`），无题号时为 `# 笔记标题`，其后空一行并原样保留正文。
 
 搜索以关键词、题号、标签条件取交集，关键词不区分英文大小写，标签完整匹配；按更新时间降序返回，默认 10 条、最多 20 条，包含摘要和真实 ID。它是结构化笔记的关键词搜索，当前没有向量检索或长期记忆。
 
@@ -300,4 +304,49 @@ data/conversations/conversation-<id>.jsonl      # 每行一条消息，无头部
 
 仅凭题号搜索仍可能返回题解、题单或无关内容；上述检查没有证明真实模型能自主找到每道题，也不代表所有页面均可抓取。
 
-下一步优先建立固定真实模型任务集，再完善调试记录与笔记关联、上下文压缩与记忆、SQLite 检索，具体验收见 [TODO.md](./TODO.md)。
+下一步优先建立固定真实模型任务集，再完善调试记录与笔记关联、上下文压缩与记忆的真实模型评测、SQLite 检索，具体验收见 [TODO.md](./TODO.md)。
+
+
+## 上下文压缩（2026-10-26）
+
+逻辑位于 `src/agent/context-compression.ts`，由 `runner.ts` 接入；长期记忆使用独立的 `memory.ts` 流程。裁剪只作用于本轮发给模型的上下文，磁盘会话历史不删除，下次交互仍从完整历史开始。
+
+1. 工具结果超过 200,000 UTF-8 字节时立即写入 `data/agent-context/<本次执行 UUID>/tool-*.txt`，上下文保留前 2,000 个 Unicode 字符及落盘路径。前端工具事件仍收到原始结果。该路径是本机文件，不是下载链接；当前没有模型读取此文件的工具。
+2. 明确收到上下文超限错误后依次执行：大结果落盘检查、保留最近 50 条输入、将较旧工具结果替换为 `[Earlier tool result compacted. Re-run if needed.]`，最近三个结果保留当前内容（已落盘的大结果仍为预览）。每阶段后重试模型请求。
+3. 本地操作后仍超限，先保存包含本轮工具输出的完整历史 `history-*.json`，再使用同一个模型进行无工具、非流式总结。保留目标、重要发现、已改文件、剩余工作、用户约束等；摘要作为历史资料注入，不提升为系统指令。摘要保存为 `summary-*.txt`。
+4. 每次交互的总结 API 调用总计最多三次，包括总结失败或成功总结后主请求仍超限的情况。总结输入先采用大结果预览及旧结果占位符，第二次缩到最近 50 条，第三次缩到最近 6 条；输出预算为 4,096 tokens。成功后使用摘要加近期消息继续原轮次，不重复执行工具。
+5. 总结预算耗尽后，最终只保留最近 6 条并再请求一次。仍超限则返回 `CONTEXT_LIMIT`，不保存本轮半截回答。用户取消立即停止；普通认证、限流和网络错误不触发上下文恢复。若当前失败响应已经显示文字，直接停止，不重放片段。
+
+所有裁剪保留系统/开发者约束和最后一条用户要求。工具调用、结果及相邻 reasoning 保持完整；因此边界处可能多于 50/6 条。如果最新协议块本身仍然过大，最终明确停止，而不产生孤立的 tool result。当前 SDK 使用 `function_call_output` 表示工具结果。
+
+临时结果、历史备份和摘要使用随机文件名，目录/文件权限分别为 0700/0600，位于 Git 忽略的 `data/` 中。目前保留供本机检查，可在不需要时清理 `data/agent-context/`；不会自动将摘要作为跨会话记忆召回。测试通过注入临时目录和模拟 SDK 网络响应运行，不调用付费模型。
+
+
+## 长期记忆（2026-10-26）
+
+代码位于 `src/agent/memory-store.ts`（文件、索引、并发保护）和 `src/agent/memory.ts`（召回、提取、整理、提示词与输入注入），由 `runner.ts` 接入。默认在同一项目的会话之间共享 `data/memory/`，不是用户账号隔离服务。
+
+四类记忆：`user` 用户偏好、`behavior` 行为约束、`project` 项目目标和状态、`reference` 文件位置及参考资料。每条记忆为 Markdown，frontmatter 包含 name、description、type、evidence、createdAt、updatedAt；正文自由 Markdown。文件名形如 `entries/user-tabs.<UUID>.md`。索引 `memory.md` 每行一个相对链接，并包含类型和简述。
+
+```text
+data/memory/
+├── memory.md
+└── entries/
+    └── user-tabs.<UUID>.md
+```
+
+每轮执行顺序：
+
+1. 读取当前记忆快照，将最近 10 条消息和索引交给一次无工具、非流式模型查询；空库无需查询 API。只接受现有名称，最多选择 5 条，不允许模型提供任意文件路径。
+2. 将目录作为历史资料加入系统 instructions，选中文件的 frontmatter 和正文注入当前 user 消息的副本，随后附上原始当前要求。系统约定当前明确要求优先于旧记忆；保存到会话中的仍然是用户原话。
+3. 执行原有模型/工具循环。只有完整回答且没有后续工具调用时，调用一次独立记忆提取 API。输入为最近对话、当前用户原话、本轮最多 10 个成功工具结果的前 4,000 字符，以及已有记忆。只处理本轮新信息，历史消息仅帮助解析指代；提取失败不无限重试。
+4. 返回结构化 upsert/remove，程序校验后写文件并更新索引。新增/更新最多 10 条、删除最多 10 条。每项需要真实来源片段；用户偏好、行为约束和删除只能引用本轮用户原话，项目/参考记忆也可引用本轮成功工具结果。禁止靠助手自己的回答确认事实，防止重新提取已经删除的旧偏好。用户说“记住…”、纠正和忘记都走此轮末流程。
+5. 更新后超过 10 条时，再调用一次整理 API：同类去重、按来源与更新时间解决矛盾、淘汰过时信息，结果最多 10 条。每条结果需注明原记忆来源，淘汰需明确理由，全部旧记录必须有归属，否则保留整理前的数据。整理失败不会撤销已成功的本轮更新，下轮可再次尝试。
+
+默认复用 `DEEPSEEK_MODEL`；可用 `MEMORY_MODEL` 为召回、提取和整理指定另一模型名，仍使用同一 DeepSeek endpoint/密钥。召回输出预算 512 tokens，提取/整理 8,192 tokens，均关闭 reasoning、无工具调用、SDK 不自动重试。所有这些请求的耗时与真实 usage 计入本轮统计。测试可通过 runner 第七个参数 `{ memory: false }` 禁用，或 `{ memoryDirectory: URL }` 注入临时目录。
+
+索引通过临时文件 rename 原子替换，只指向完整写入的不可变 Markdown 文件；提交后清理旧文件。读写短暂持有目录锁，LLM 调用期间不持锁；提交时比较内容版本，其他会话已修改则拒绝覆盖并提示重试。异常退出可能留下 `.write-lock`，需确认没有进程使用后再清理。单条正文上限 8 kB，单库 50 条/200 kB 是故障情况下的硬上限，不代替 10 条整理阈值。
+
+网页 NDJSON 增加 `memory` 状态事件，最终 done 和非流式结果包含 `memoryEvents`。CLI 同样展示处理进度。普通记忆模型失败会警告并继续保存回答；取消则停止后续操作。索引提交是写入边界，取消不能撤销已提交的记忆；记忆与会话文件不是同一事务，随后会话保存失败时记忆可能已更新。记忆事件只在当前轮展示，不作为用户消息或助手正文保存。
+
+测试：`test/memory.test.mjs` 验证文件、索引、召回上限、纠正/忘记、来源检查、整理、取消与并发版本冲突；`test/agent-memory.test.mjs` 验证模拟 SDK 调用时序、跨会话召回、只在最终回答后提取一次、失败降级、统计和原文持久化；网页测试验证失败提示在回答保存后仍然可见。尚未用真实模型评测记忆提取、相关性和冲突合并质量。

@@ -60,6 +60,7 @@ async function main(): Promise<void> {
                         input,
                         {
                             onChunk: (text) => {stdout.write(text);},
+                            onMemory: event => { stdout.write(`\n[记忆] ${event.message}\n`); },
                             onTool: (name, argumentsJson, output) => {
                                 stdout.write(`\n[工具] ${name} 参数： ${argumentsJson}\n`);
                                 stdout.write(`[结果] ${output}\n助手： `);

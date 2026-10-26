@@ -86,7 +86,7 @@ export function createExpressApp(
 
         // 消息长度、会话读取、并发保护、模型调用和保存都由 service 负责。
         const result = await service.run(body.conversationId, body.message);
-        res.json({ conversationId: result.conversationId, reply: result.reply });
+        res.json({ conversationId: result.conversationId, reply: result.reply, memoryEvents: result.memoryEvents });
     });
 
     app.post('/api/sandbox/run', requireJson, parseJson, async (req, res) => {
@@ -125,10 +125,11 @@ export function createExpressApp(
                 onChunk: text => send({ type: 'delta', text }),
                 onTool: (name, argumentsJson, output, record) => send({ type: 'tool', name, argumentsJson, output, ...record }),
                 onModelCall: record => send({ type: 'model', ...record }),
+                onMemory: event => send({ type: 'memory', ...event }),
             });
             // run 返回前已经保存，done 才代表本轮真正完成。
             send({ type: 'done', conversationId: result.conversationId,
-                reply: result.reply, title: result.conversation.title,
+                reply: result.reply, title: result.conversation.title, memoryEvents: result.memoryEvents,
                 toolCalls: result.conversation.messages.at(-1)?.toolCalls ?? [],
                 metrics: result.conversation.messages.at(-1)?.metrics });
         } catch (error) {

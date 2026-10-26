@@ -124,3 +124,27 @@ test('网页按文字→工具→文字排列，末尾仅汇总，刷新后顺�
         verify();
     } finally { dom.window.close(); }
 });
+
+test('记忆更新状态可见，回答保存后仍保留记忆失败警告',async()=>{
+    const dom=new JSDOM(await readFile(new URL('../public/index.html',import.meta.url),'utf8'),{url:'http://localhost',runScripts:'outside-only'});
+    let controller;const tick=()=>new Promise(resolve=>setTimeout(resolve,65));
+    try {
+        dom.window.TextDecoder=TextDecoder;
+        dom.window.fetch=async path=>path==='/api/agent/stream'
+            ?new Response(new ReadableStream({start(value){controller=value;}}),{headers:{'Content-Type':'application/x-ndjson'}})
+            :{ok:true,json:async()=>({id:'memory-status',title:'新会话',messages:[]})};
+        dom.window.eval(await readFile(new URL('../public/app.js',import.meta.url),'utf8'));
+        const doc=dom.window.document;doc.querySelector('#message-input').value='请记住用 tab';
+        doc.querySelector('#message-form').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await tick();
+        const send=value=>controller.enqueue(new TextEncoder().encode(JSON.stringify(value)+'\n'));
+        send({type:'delta',text:'将记录'});
+        send({type:'memory',phase:'extract',status:'running',message:'正在总结本轮记忆…'});await tick();
+        assert.equal(doc.querySelector('#status').textContent,'正在总结本轮记忆…');
+        const warning={phase:'extract',status:'warning',message:'本轮记忆更新未完成，请重试“记住…”'};
+        send({type:'memory',...warning});
+        send({type:'done',conversationId:'memory-status',reply:'将记录',memoryEvents:[warning]});await tick();
+        assert.match(doc.querySelector('#status').textContent,/回答已保存。.*记忆更新未完成/);
+        assert.equal(doc.querySelector('#status').classList.contains('error'),true);
+        assert.equal(doc.querySelector('#message-input').value,'');
+    } finally {dom.window.close();}
+});

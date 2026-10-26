@@ -11,7 +11,12 @@ globalThis.fetch = async (url, options) => {
     assert.equal(String(url), 'https://api.deepseek.com/responses');
     return handler(JSON.parse(options.body), options);
 };
-const { requestModel } = await import('../src/agent/runner.ts');
+const { requestModel: requestModelWithMemory } = await import('../src/agent/runner.ts');
+// 既有 Agent/压缩回归隔离长期记忆；记忆链路由独立测试覆盖。
+const requestModel = (...args) => {
+    args[6] = { ...args[6], memory: false };
+    return requestModelWithMemory(...args);
+};
 const { executeTool } = await import('../src/tools/index.ts');
 
 test('评测可以注入独立工具注册表，模型调用不会落回默认工具', async () => {
@@ -237,3 +242,91 @@ test('Agent 联网链路：搜索→抓取→正文回答，工具调用回传�
     assert.equal(requests, 3);
     assert.deepEqual(tools.map(t => [t.name,t.status,t.round]), [['web_search','success',1],['read_webpage','success',2]]);
 });
+
+async function contextFixture(fn) {
+    const { mkdtemp, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { pathToFileURL } = await import('node:url');
+    const root = await mkdtemp(join(tmpdir(), 'agent-context-'));
+    try { await fn({directory:pathToFileURL(root+'/')}); }
+    finally { await rm(root,{recursive:true,force:true}); }
+}
+function overflow() {
+    return Response.json({error:{code:'context_length_exceeded',message:'maximum context length exceeded'}},{status:400});
+}
+function summaryResponse(text) {
+    return Response.json({id:'summary',object:'response',status:'completed',output:[{
+        type:'message',role:'assistant',content:[{type:'output_text',text,annotations:[]}],
+    }],usage:{input_tokens:10,output_tokens:5,total_tokens:15}});
+}
+
+test('SDK 超限恢复完整链路：大结果落盘、工具不重复执行、云端总结后继续，统计包含总结', async () => contextFixture(async contextOptions => {
+    const { readFile } = await import('node:fs/promises');
+    let executions=0, overflows=0, summaries=0;
+    const huge=JSON.stringify({ok:true,text:'中'.repeat(80000)});
+    const tools={toolDefinitions:[],executeTool:async()=>{executions++;return huge;}};
+    const records=[];
+    const original=Array.from({length:70},(_,i)=>({role:i%2?'assistant':'user',content:`历史${i}`}));
+    original.push({role:'user',content:'当前要求：只给提示'});
+    handler=async body=>{
+        if (body.stream===false) {
+            summaries++;
+            assert.equal(body.tools,undefined);
+            assert.match(body.instructions,/当前目标.*重要发现.*已改文件.*剩余工作.*用户约束/);
+            assert.match(body.input[0].content,/历史0/);
+            return summaryResponse('目标：给提示；约束：不提供完整解法');
+        }
+        if (!executions) return response([call('a','{}','test'),call('b','{}','test'),call('c','{}','test'),call('d','{}','test')]);
+        const results=body.input.filter(item=>item.type==='function_call_output');
+        assert.equal(results.length,4);
+        assert.equal(body.input.filter(item=>item.type==='function_call').length,4);
+        if (!summaries) {
+            if(overflows===0) {
+                assert(results[0].output.length < 3000);
+                const path=results[0].output.match(/Full result saved locally: (.+)\]$/)[1];
+                assert.equal(await readFile(path,'utf8'),huge);
+            }
+            if(overflows===3) assert.equal(results[0].output,'[Earlier tool result compacted. Re-run if needed.]');
+            overflows++;return overflow();
+        }
+        assert(body.input.some(item=>item.content==='当前要求：只给提示'));
+        assert(body.input.some(item=>typeof item.content==='string' && item.content.includes('Conversation summary')));
+        return response([],'提示：考虑边界');
+    };
+    assert.equal(await requestModel(original,undefined,undefined,undefined,record=>records.push(record),tools,contextOptions),'提示：考虑边界');
+    assert.equal(executions,4);assert.equal(summaries,1);assert.equal(overflows,4);
+    assert.equal(records.length,7);
+    assert.deepEqual(records.map(record=>record.round),[1,2,3,4,5,6,7]);
+    assert.deepEqual(records[5].usage,{inputTokens:10,outputTokens:5,totalTokens:15});
+    assert.equal(original.length,71);
+}));
+
+test('SDK 持续超限最多三次总结及一次最终裁剪；普通错误不重试', async () => contextFixture(async contextOptions => {
+    let requests=0,summaries=0;
+    handler=body=>{
+        if(body.stream===false){summaries++;return summaryResponse('摘要');}
+        requests++;return overflow();
+    };
+    await assert.rejects(requestModel([{role:'user',content:'继续'}],undefined,undefined,undefined,undefined,undefined,contextOptions),/压缩流程已停止/);
+    assert.equal(summaries,3);assert.equal(requests,8);
+    requests=0;
+    handler=()=>{requests++;return Response.json({error:{code:'invalid_request',message:'invalid parameter'}},{status:400});};
+    await assert.rejects(requestModel([{role:'user',content:'继续'}]),/invalid parameter/);
+    assert.equal(requests,1);
+}));
+
+test('流内上下文错误可恢复，但已显示文本后不重试，不重复展示', async () => contextFixture(async contextOptions => {
+    let requests=0;
+    const eventError=prefix=>new Response(
+        (prefix ? `data: ${JSON.stringify({type:'response.output_text.delta',delta:prefix})}\n\n` : '') +
+        `data: ${JSON.stringify({type:'response.failed',response:{error:{code:'context_length_exceeded',message:'too long'}}})}\n\n`,
+        {headers:{'Content-Type':'text/event-stream'}});
+    handler=()=>++requests===1?eventError(''):response([],'完成');
+    assert.equal(await requestModel([{role:'user',content:'继续'}],undefined,undefined,undefined,undefined,undefined,contextOptions),'完成');
+    assert.equal(requests,2);
+    requests=0;const chunks=[];
+    handler=()=>{requests++;return eventError('半截');};
+    await assert.rejects(requestModel([{role:'user',content:'继续'}],chunk=>chunks.push(chunk),undefined,undefined,undefined,undefined,contextOptions),/本次响应已输出部分内容后发生上下文超限，为避免重复输出，已停止自动重试。本轮未保存。/);
+    assert.deepEqual(chunks,['半截']);assert.equal(requests,1);
+}));

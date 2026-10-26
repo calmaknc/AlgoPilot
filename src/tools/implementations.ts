@@ -105,21 +105,23 @@ export function createPythonTool(service: SandboxService = sandboxService): Regi
 // ── 用户刷题笔记 ──
 const stringField = { type: 'string' };
 const stringsField = { type: 'array', items: stringField };
+const noteProperties = {
+    title: { type: 'string', description: '1～200 字符的单行标题' },
+    content: { type: 'string', description: '自由 Markdown 正文，最多 32 KiB。仅保存时原样保留指定内容；只有用户要求整理时才改写，不强制套用模板。' },
+    tags: stringsField,
+    problem: { type: 'object', additionalProperties: false,
+        properties: { number: { type: 'integer', minimum: 1 }, url: stringField } },
+};
 const practiceNoteSchema = {
     type: 'object', additionalProperties: false,
-    properties: {
-        problem: { type: 'object', additionalProperties: false,
-            properties: { title: stringField, number: { type: 'integer', minimum: 1 }, url: stringField }, required: ['title'] },
-        original: { type: 'object', additionalProperties: false,
-            description: '保留用户原始思路和代码；缺失字段用空字符串，thought/code 至少一个非空。不得编造用户原文。',
-            properties: { thought: stringField, code: stringField, language: stringField, solution: stringField },
-            required: ['thought', 'code', 'language'] },
-        summary: { type: 'object', additionalProperties: false,
-            description: 'Agent 整理的内容；未知用空字符串或空数组。',
-            properties: { approach: stringField, tags: stringsField, timeComplexity: stringField,
-                spaceComplexity: stringField, pitfalls: stringsField, reviewPoints: stringsField },
-            required: ['approach', 'tags', 'timeComplexity', 'spaceComplexity', 'pitfalls', 'reviewPoints'] },
-    }, required: ['problem', 'original', 'summary'],
+    properties: noteProperties, required: ['title', 'content'],
+};
+const notePatchSchema = {
+    type: 'object', additionalProperties: false, minProperties: 1,
+    properties: { ...noteProperties,
+        problem: { anyOf: [noteProperties.problem, { type: 'null' }], description: '提供对象时替换题目关联，null 清除关联，省略则保留' },
+        appendContent: { type: 'string', description: '在后端原样追加到正文末尾，请显式包含需要的换行。不能与 content 同时提供。' },
+    },
 };
 
 function noteArgs(value: unknown, allowed: string[]): Record<string, unknown> {
@@ -134,12 +136,12 @@ function noteTool(name: string, description: string, properties: Record<string, 
 }
 
 export function createSavePracticeNoteTool(directory?: URL): RegisteredTool {
-    return noteTool('save_practice_note', '用户明确要求记录或保存刷题笔记时使用，返回新笔记 ID。修改已有笔记使用 update_practice_note。',
+    return noteTool('save_practice_note', '用户明确要求记录或保存刷题笔记时使用，仅保存时原样记录正文；整理是独立的用户请求，只有用户同时要求保存时才写入。返回新笔记 ID。修改已有笔记使用 update_practice_note。',
         { note: practiceNoteSchema }, ['note'], async (value, signal) => {
             const args = noteArgs(value, ['note']);
             signal?.throwIfAborted();
-            const note = await createPracticeNote(args.note, directory);
-            return { id: note.id, problem: note.problem, createdAt: note.createdAt, updatedAt: note.updatedAt };
+            const note = await createPracticeNote(noteArgs(args.note, ['title', 'content', 'tags', 'problem']), directory);
+            return { id: note.id, title: note.title, createdAt: note.createdAt, updatedAt: note.updatedAt };
         });
 }
 export function createGetPracticeNoteTool(directory?: URL): RegisteredTool {
@@ -150,13 +152,13 @@ export function createGetPracticeNoteTool(directory?: URL): RegisteredTool {
         });
 }
 export function createUpdatePracticeNoteTool(directory?: URL): RegisteredTool {
-    return noteTool('update_practice_note', '完整替换已有笔记。先读取原笔记，保留未修改字段和用户原文，仅按用户要求修改；不接受虚构 ID。',
-        { id: stringField, note: practiceNoteSchema }, ['id', 'note'], async (value, signal) => {
+    return noteTool('update_practice_note', '局部更新已有笔记。先读取原笔记，只传需要修改的字段；省略字段保持不变。追加用 appendContent，替换正文用 content，二者互斥；不接受虚构 ID。',
+        { id: stringField, note: notePatchSchema }, ['id', 'note'], async (value, signal) => {
             const args = noteArgs(value, ['id', 'note']);
             if (typeof args.id !== 'string') throw new Error('id 必须是字符串');
             signal?.throwIfAborted();
             const note = await updatePracticeNote(args.id, args.note, directory);
-            return { id: note.id, problem: note.problem, createdAt: note.createdAt, updatedAt: note.updatedAt };
+            return { id: note.id, title: note.title, createdAt: note.createdAt, updatedAt: note.updatedAt };
         });
 }
 export function createSearchPracticeNotesTool(directory?: URL): RegisteredTool {
@@ -187,7 +189,7 @@ export function createDeletePracticeNoteTool(directory?: URL): RegisteredTool {
 }
 
 export function createExportPracticeNoteTool(directory?: URL, exportsDirectory?: URL): RegisteredTool {
-    return noteTool('export_practice_note_markdown', '将指定刷题笔记导出为本机 Markdown 快照，保存到 data/exports/，返回文件名和本机路径。不是网页下载链接，不修改原笔记。',
+    return noteTool('export_practice_note_markdown', '将指定刷题笔记导出为本机 Markdown 快照，自动添加“题号. 题目名称”一级标题（名称使用笔记 title；无题号时仅使用 title），正文原样保留。保存到 data/exports/，返回文件名和本机路径。不是网页下载链接，不修改原笔记。',
         { id: stringField }, ['id'], async (value, signal) => {
             const id = readSingleStringArgument(value, 'id');
             return exportPracticeNoteMarkdown(id, directory, exportsDirectory, signal);

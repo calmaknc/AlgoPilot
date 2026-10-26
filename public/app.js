@@ -327,6 +327,8 @@ form.addEventListener('submit', async event => {
                     renderBody(textBlock, 'assistant', blockText);
                     messages.scrollTop = messages.scrollHeight;
                 }, 40);
+            } else if (event.type === 'memory') {
+                if (typeof event.message === 'string') setStatus(event.message, event.status === 'warning');
             } else if (event.type === 'tool') {
                 if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
                 if (textBlock) renderBody(textBlock, 'assistant', blockText);
@@ -344,7 +346,10 @@ form.addEventListener('submit', async event => {
         remember(current);
         renderMessages();
         input.value = '';
-        readyStatus('回答已保存。');
+        const memoryWarnings = (data.memoryEvents ?? []).filter(event => event.status === 'warning');
+        const memoryResult = (data.memoryEvents ?? []).findLast(event => event.phase !== 'recall' && event.status === 'success');
+        if (memoryWarnings.length) setStatus('回答已保存。' + memoryWarnings.map(event => event.message).join('；'), true);
+        else readyStatus('回答已保存。' + (memoryResult ? memoryResult.message : ''));
     } catch (error) {
         if (renderTimer) { clearTimeout(renderTimer); renderTimer = undefined; }
         if (activeRun?.signal.aborted) {

@@ -2,167 +2,59 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
 
-/** 输入内容不包含 ID 和时间；这些元数据由后端生成。 */
+/** 正文是用户自由编写的 Markdown；题目关联和标签仅用于管理。 */
 export type PracticeNoteInput = {
-    problem: {
-        title: string;
-        number?: number;
-        url?: string;
-    };
-    // 原始内容保留原样，不 trim 代码，不让整理结果覆盖原文。
-    original: {
-        thought: string;
-        code: string;
-        language: string;
-        solution?: string;
-    };
-    // 整理结果不是已经通过运行验证的结论。
-    summary: {
-        approach: string;
-        tags: string[];
-        timeComplexity: string;
-        spaceComplexity: string;
-        pitfalls: string[];
-        reviewPoints: string[];
-    };
+    title: string;
+    content: string;
+    tags: string[];
+    problem?: { number?: number; url?: string };
 };
-
 export type PracticeNote = PracticeNoteInput & {
+    schemaVersion: 2;
     id: string;
     createdAt: string;
     updatedAt: string;
 };
 
-// 用户刷题笔记存放在被忽略的 data/ 下。
-const notesDirectory = new URL('../../data/practice-notes/', import.meta.url);
-
-/** 基础辅助函数已提供：将 unknown 缩小为可访问字段的对象。 */
+// 新格式使用独立目录，不读取或迁移旧格式文件。
+const notesDirectory = new URL('../../data/practice-notes-v2/', import.meta.url);
+const MAX_CONTENT_BYTES = 32 * 1024;
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
-
-/** 基础辅助函数已提供：限制 ID，避免输入被当作任意路径。 */
 function noteFile(id: string, directory: URL): URL {
-    if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) {
-        throw new Error('笔记 ID 格式不正确');
-    }
+    if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('笔记 ID 格式不正确');
     return new URL(`note_${id}.json`, directory);
 }
-
-/** 校验一个字符串；允许空字符串表示尚未整理，不修改原文。 */
 function readString(value: unknown, name: string): string {
-    if (typeof value !== 'string') {
-        throw new Error(`${name} 必须是字符串`);
-    }
+    if (typeof value !== 'string') throw new Error(`${name} 必须是字符串`);
     return value;
 }
-
-/** 校验字符串数组，并返回独立的新数组。 */
-function readStringArray(value: unknown, name: string): string[] {
-    if (!Array.isArray(value)) {
-        throw new Error(`${name} 必须是数组`);
-    }
-    return value.map((item: unknown) => {
-        if (typeof item !== 'string' || item.trim().length === 0) {
-            throw new Error(`${name} 的每一项必须是非空字符串`);
-        }
-        return item.trim();
-    });
-}
-
 export function parsePracticeNoteInput(value: unknown): PracticeNoteInput {
-    if (!isRecord(value)) {
-        throw new Error('笔记必须是对象');
-    }
-
-    const problem = value.problem;
-    if (!isRecord(problem)) {
-        throw new Error('problem 必须是对象');
-    }
-
-    if (typeof problem.title !== 'string' || problem.title.trim().length === 0) {
-        throw new Error('题目标题不能为空');
-    }
-
-    const parsedProblem: PracticeNoteInput['problem'] = {
-        title: problem.title.trim(),
-    };
-
-    if (problem.number !== undefined) {
-        if (typeof problem.number !== 'number' || !Number.isSafeInteger(problem.number) || problem.number <= 0) {
-            throw new Error('题号必须是正的安全整数');
+    if (!isRecord(value)) throw new Error('笔记必须是对象');
+    const title = readString(value.title, 'title').trim();
+    const content = readString(value.content, 'content');
+    if (!title || title.length > 200 || /[\r\n]/.test(title)) throw new Error('标题必须为 1～200 字符的单行文本');
+    if (!content.trim() || Buffer.byteLength(content, 'utf8') > MAX_CONTENT_BYTES) throw new Error('正文不能为空且不能超过 32 KiB');
+    const tags = value.tags === undefined ? [] : value.tags;
+    if (!Array.isArray(tags) || tags.length > 50 || tags.some(tag => typeof tag !== 'string' || !tag.trim() || tag.trim().length > 100)) throw new Error('tags 必须是最多 50 个非空短字符串');
+    const result: PracticeNoteInput = { title, content, tags: tags.map(tag => tag.trim()) };
+    if (value.problem !== undefined) {
+        if (!isRecord(value.problem) || Object.keys(value.problem).some(key => !['number', 'url'].includes(key))) throw new Error('problem 格式不正确');
+        const { number, url } = value.problem;
+        result.problem = {};
+        if (number !== undefined) {
+            if (typeof number !== 'number' || !Number.isSafeInteger(number) || number <= 0) throw new Error('题号必须是正的安全整数');
+            result.problem.number = number;
         }
-        parsedProblem.number = problem.number;
-    }
-
-    if (problem.url !== undefined) {
-        if (typeof problem.url !== 'string') {
-            throw new Error("题目链接必须是字符串");
+        if (url !== undefined) {
+            if (typeof url !== 'string') throw new Error('题目链接必须是字符串');
+            const parsed = new URL(url);
+            if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('题目链接必须使用 http 或 https');
+            result.problem.url = url;
         }
-
-        let url: URL;
-
-        try {
-            url = new URL(problem.url);
-        } catch {
-            throw new Error('题目链接格式不正确');
-        }
-
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-            throw new Error('题目链接必须使用 http 或 https');
-        }
-        parsedProblem.url = url.href;
     }
-
-
-    const original = value.original;
-    if (!isRecord(original)) {
-        throw new Error('original 必须是对象');
-    }
-    if (typeof original.thought !== 'string' || typeof original.code !== 'string' || (original.thought.trim().length === 0 && original.code.trim().length === 0)) {
-        throw new Error('code 和 thought 至少一个不为空');
-    }
-    let language = '';
-
-    if (original.language !== undefined) {
-        if (typeof original.language !== 'string') {
-            throw new Error('language 必须是字符串');
-        }
-
-        language = original.language.trim();
-    }
-
-    const parsedOriginal: PracticeNoteInput['original'] = {
-        thought: original.thought,
-        code: original.code,
-        language
-    };
-
-    if (original.solution !== undefined) {
-        if (typeof original.solution !== 'string') {
-            throw new Error('solution 必须是字符串');
-        }
-
-        parsedOriginal.solution = original.solution;
-    }
-
-    const summary = value.summary;
-    if (!isRecord(summary)) {
-        throw new Error('summary 必须是对象');
-    }
-
-    return {
-        problem: parsedProblem,
-        original: parsedOriginal,
-        summary: {
-            approach: readString(summary.approach, 'summary.approach'),
-            tags: readStringArray(summary.tags, 'summary.tags'),
-            timeComplexity: readString(summary.timeComplexity, 'summary.timeComplexity'),
-            spaceComplexity: readString(summary.spaceComplexity, 'summary.spaceComplexity'),
-            pitfalls: readStringArray(summary.pitfalls, 'summary.pitfalls'),
-            reviewPoints: readStringArray(summary.reviewPoints, 'summary.reviewPoints'),
-        },
-    };
+    return result;
 }
 
 export function parsePracticeNote(value: unknown, expectedId: string): PracticeNote {
@@ -171,6 +63,7 @@ export function parsePracticeNote(value: unknown, expectedId: string): PracticeN
     if (!isRecord(value)) {
         throw new Error('笔记文件内容必须是对象');
     }
+    if (value.schemaVersion !== 2) throw new Error('不支持的笔记格式，仅支持 schemaVersion 2');
     if (value.id !== expectedId) {
         throw new Error('笔记 ID 与文件 ID 不一致');
     }
@@ -188,7 +81,7 @@ export function parsePracticeNote(value: unknown, expectedId: string): PracticeN
 
     // 复用正文校验，不为损坏的文件自动补充 ID 或时间。
     const content = parsePracticeNoteInput(value);
-    return { ...content, id: expectedId, createdAt, updatedAt };
+    return { ...content, schemaVersion: 2, id: expectedId, createdAt, updatedAt };
 }
 
 /** 已提供：校验完整数据，创建目录，先写临时文件再替换正式文件。 */
@@ -218,7 +111,7 @@ export async function createPracticeNote(
     const id = randomUUID();
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
-    const practiceNote = {...practiceNoteInput, id, createdAt, updatedAt};
+    const practiceNote: PracticeNote = {...practiceNoteInput, schemaVersion: 2, id, createdAt, updatedAt};
     await writeNote(practiceNote, directory);
     return practiceNote;
 }
@@ -244,8 +137,18 @@ export async function updatePracticeNote(
     directory: URL = notesDirectory,
 ): Promise<PracticeNote> {
     const oldNote = await getPracticeNote(id, directory);
-    const newInput = parsePracticeNoteInput(input);
-    const newNote = {...newInput, id: oldNote.id, createdAt: oldNote.createdAt, updatedAt: new Date().toISOString()};
+    if (!isRecord(input) || !Object.keys(input).length || Object.keys(input).some(key => !['title', 'content', 'tags', 'problem', 'appendContent'].includes(key))) throw new Error('更新必须包含有效的修改字段');
+    if ('content' in input && 'appendContent' in input) throw new Error('content 与 appendContent 不能同时使用');
+    const merged: Record<string, unknown> = { ...oldNote, ...input };
+    if ('appendContent' in input) {
+        const addition = readString(input.appendContent, 'appendContent');
+        if (!addition.trim()) throw new Error('追加内容不能为空');
+        // 原样拼接，调用方显式提供所需的换行。
+        merged.content = oldNote.content + addition;
+    }
+    if (input.problem === null) delete merged.problem;
+    const newInput = parsePracticeNoteInput(merged);
+    const newNote: PracticeNote = {...newInput, schemaVersion: 2, id: oldNote.id, createdAt: oldNote.createdAt, updatedAt: new Date().toISOString()};
 
     await writeNote(newNote, directory);
     return newNote;
@@ -273,14 +176,14 @@ export async function searchPracticeNotes(
         const match = /^note_([a-zA-Z0-9_-]{1,128})\.json$/.exec(entry.name);
         if (!entry.isFile() || !match) continue;
         const note = await getPracticeNote(match[1]!, directory);
-        if (filters.number !== undefined && note.problem.number !== filters.number) continue;
-        if (tag && !note.summary.tags.some(value => value.toLowerCase() === tag)) continue;
-        const text = [note.problem.title, note.problem.number ?? '', note.original.thought,
-            note.original.code, note.original.solution ?? '', note.summary.approach,
-            ...note.summary.tags, ...note.summary.pitfalls, ...note.summary.reviewPoints].join('\n').toLowerCase();
+        if (filters.number !== undefined && note.problem?.number !== filters.number) continue;
+        if (tag && !note.tags.some(value => value.toLowerCase() === tag)) continue;
+        const text = [note.title, note.content, ...note.tags].join('\n').toLowerCase();
         if (query && !text.includes(query)) continue;
-        matches.push({ id: note.id, problem: note.problem, tags: note.summary.tags,
-            approach: note.summary.approach.slice(0, 300), updatedAt: note.updatedAt });
+        const matchAt = query ? note.content.toLowerCase().indexOf(query) : 0;
+        const start = Math.max(0, matchAt - 80);
+        matches.push({ id: note.id, title: note.title, problem: note.problem, tags: note.tags,
+            excerpt: note.content.slice(start, start + 300), updatedAt: note.updatedAt });
     }
     matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
     return { matches: matches.slice(0, limit), total: matches.length };
@@ -293,32 +196,15 @@ export async function deletePracticeNote(id: string, directory: URL = notesDirec
     const note = await getPracticeNote(id, directory);
     signal?.throwIfAborted();
     await rm(file);
-    return { id, problem: note.problem, deleted: true };
+    return { id, title: note.title, deleted: true };
 }
 
-/** 围栏长度大于代码中的反引号串，防止原始代码意外结束代码块。 */
+/** 添加题号与标题，正文原样保留，不改写代码围栏。 */
 export function practiceNoteToMarkdown(note: PracticeNote): string {
-    const longest = Math.max(2, ...(note.original.code.match(/`+/g) ?? []).map(value => value.length));
-    const fence = '`'.repeat(longest + 1);
-    const language = /^[a-zA-Z0-9_+-]{1,30}$/.test(note.original.language) ? note.original.language : '';
-    const list = (items: string[]) => items.length ? items.map(item => `- ${item}`).join('\n') : '暂无';
-    return [
-        `# ${note.problem.title.replace(/[\r\n]+/g, ' ')}`,
-        `笔记 ID：${note.id}`,
-        `题号：${note.problem.number ?? '未记录'}`,
-        `题目链接：${note.problem.url ?? '未记录'}`,
-        `创建时间：${note.createdAt}\n\n更新时间：${note.updatedAt}`,
-        '## 用户原始内容',
-        '### 思路', note.original.thought || '未提供',
-        '### 代码', `${fence}${language}\n${note.original.code}${note.original.code.endsWith('\n') ? '' : '\n'}${fence}`,
-        '### 原始题解', note.original.solution || '未提供',
-        '## Agent 整理',
-        '### 解题思路', note.summary.approach || '尚未整理',
-        '### 标签', list(note.summary.tags),
-        '### 复杂度', `时间：${note.summary.timeComplexity || '未分析'}\n\n空间：${note.summary.spaceComplexity || '未分析'}`,
-        '### 易错点', list(note.summary.pitfalls),
-        '### 复习要点', list(note.summary.reviewPoints),
-    ].join('\n\n') + '\n';
+    const title = note.problem?.number === undefined
+        ? note.title
+        : `${note.problem.number}. ${note.title}`;
+    return `# ${title}\n\n${note.content}`;
 }
 
 /** 导出独立快照，文件名由后端生成，不接受外部路径，不覆盖之前的导出。 */
