@@ -1,6 +1,7 @@
 import test from 'node:test';
+import { DatabaseSync } from 'node:sqlite';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -51,12 +52,43 @@ test('持久化、局部更新、原样追加、清除关联与失败保护', as
         assert.deepEqual(await getPracticeNote(saved.id,directory),appended);
         await assert.rejects(getPracticeNote('../escape',directory));
         await assert.rejects(updatePracticeNote('missing',{title:'x'},directory));
-        const file = new URL(`note_${saved.id}.json`,directory);
-        await writeFile(file,'{');
-        await assert.rejects(updatePracticeNote(saved.id,{content:'x'},directory));
-        assert.equal(await readFile(file,'utf8'),'{');
+        assert.deepEqual(await readdir(root), ['notes.sqlite']);
+        assert.equal((await readFile(new URL('notes.sqlite', directory))).subarray(0, 16).toString(), 'SQLite format 3\0');
+        const db = new DatabaseSync(join(root, 'notes.sqlite'));
+        try {
+            db.prepare('UPDATE notes SET tags = ? WHERE id = ?').run('{', saved.id);
+            await assert.rejects(updatePracticeNote(saved.id,{content:'x'},directory));
+            assert.equal(db.prepare('SELECT content FROM notes WHERE id = ?').get(saved.id).content, appended.content);
+            db.prepare('UPDATE notes SET tags = ? WHERE id = ?').run('[]', saved.id);
+        } finally { db.close(); }
+        await Promise.all([' A', ' B', ' C'].map(appendContent => updatePracticeNote(saved.id, {appendContent}, directory)));
+        const concurrent = await getPracticeNote(saved.id, directory);
+        for (const addition of [' A', ' B', ' C']) assert.ok(concurrent.content.includes(addition));
         const blocker = new URL('blocker',directory);
         await writeFile(blocker,'x');
         await assert.rejects(createPracticeNote(input(),new URL('blocker/',directory)));
     } finally { await rm(root,{recursive:true,force:true}); }
+});
+
+
+test('SQLite 保留特殊字符、Unicode 搜索与空题目关联，不读取旧 JSON', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'sql-notes-'));
+    const directory = pathToFileURL(root + '/');
+    try {
+        await writeFile(new URL('note_legacy.json', directory), '{}');
+        assert.equal((await searchPracticeNotes({}, directory)).total, 0);
+        const note = await createPracticeNote({title: "SQL ' %_", content: "  ÉCOLE\n中文\n'); DROP TABLE notes; --\n", tags: ['ÉTÉ'], problem: {}}, directory);
+        assert.deepEqual(await getPracticeNote(note.id, directory), note);
+        assert.equal((await searchPracticeNotes({query:'école', tag:'été'}, directory)).total, 1);
+        assert.equal((await searchPracticeNotes({query:'%_'}, directory)).total, 1);
+        assert.equal((await searchPracticeNotes({query:'absent'}, directory)).total, 0);
+        const second = await createPracticeNote({title:'第二条', content:'正文'}, directory);
+        const result = await searchPracticeNotes({limit:1}, directory);
+        assert.equal(result.total, 2);
+        assert.equal(result.matches.length, 1);
+        const expected = [note, second].sort((a,b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+        assert.equal(result.matches[0].id, expected[0].id);
+        const controller = new AbortController(); controller.abort();
+        await assert.rejects(searchPracticeNotes({}, directory, controller.signal), {name:'AbortError'});
+    } finally { await rm(root, {recursive:true, force:true}); }
 });

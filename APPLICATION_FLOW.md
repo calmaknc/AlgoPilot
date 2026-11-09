@@ -43,7 +43,7 @@ Python 工具还需要本机 Docker 可用且已准备 `python:3.12-slim` 镜像
 
 联网工具复用 `.env` 中的 `DEEPSEEK_API_KEY`，不需要额外搜索服务 Key。客户端位于 `src/tools/web-client.ts`，没有独立 `src/web/` 目录。
 
-数据位于被 Git 忽略的 `data/conversations/`、`data/practice-notes-v2/` 和 `data/exports/`。API 密钥留在服务端，不发给浏览器。
+数据位于被 Git 忽略的 `data/conversations/`、`data/practice-notes/notes.sqlite` 和 `data/exports/`。API 密钥留在服务端，不发给浏览器。
 
 ## 2. 从网页到模型的调用链
 
@@ -232,7 +232,7 @@ data/conversations/conversation-<id>.jsonl      # 每行一条消息，无头部
 
 追加一次写入两条消息不构成崩溃事务：异常中断可能留下半轮或截断行；此版本不做自动恢复、重试去重或跨进程写入协调。完整但仅有用户消息的半轮仍可能被读到，不能把 appendFile 描述为原子提交。消息追加、元信息更新与最近会话指针更新是独立操作，保存报错后应读取历史确认状态，不直接重发。
 
-笔记仍保存为 JSON，并使用临时文件再 rename；会话消息文件不再使用整文件替换。
+笔记使用 Node.js 内置 `node:sqlite` 保存到 SQLite，首次访问时自动建库建表；旧 JSON 笔记不读取、不迁移。笔记工具参数、返回格式和 Markdown 导出保持不变，更新和删除通过事务完成。标签和可选题目关联作为 JSON 字段存储，搜索保持原有大小写不敏感的子串匹配、组合筛选、排序和摘要规则。每次操作结束关闭数据库连接；会话消息继续使用追加式 JSONL。运行环境需支持 `node:sqlite` 和直接运行 TypeScript（当前验证环境为 Node.js 25.6.1）。
 
 笔记更新尚无版本冲突检查，保存尚无幂等去重。Markdown 导出在 `data/exports/` 生成快照，网页没有下载接口；删除原笔记不会删除导出快照。
 

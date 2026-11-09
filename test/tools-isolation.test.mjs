@@ -29,7 +29,9 @@ test('独立注册表的六种笔记工具全部使用注入目录', async () =>
         assert.equal(exported.path.startsWith(join(root,'exports')+'/'),true);
         assert.match(await readFile(exported.path,'utf8'),/print\(1\)/);
         await run('delete_practice_note',{id:saved.id});
-        assert.deepEqual(await readdir(url('notes')),[]);
-        assert.deepEqual(await readdir(url('other')),[]);
+        assert.equal((await run('search_practice_notes',{})).total,0);
+        assert.equal(JSON.parse(await other.executeTool('search_practice_notes','{}')).total,0);
+        assert.deepEqual(await readdir(url('notes')),['notes.sqlite']);
+        assert.deepEqual(await readdir(url('other')),['notes.sqlite']);
     } finally {await rm(root,{recursive:true,force:true});}
 });

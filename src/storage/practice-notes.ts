@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { mkdir, readdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
+import { DatabaseSync } from 'node:sqlite';
+import { mkdir, writeFile, rename, rm } from 'node:fs/promises';
 
 /** 正文是用户自由编写的 Markdown；题目关联和标签仅用于管理。 */
 export type PracticeNoteInput = {
@@ -16,15 +17,14 @@ export type PracticeNote = PracticeNoteInput & {
     updatedAt: string;
 };
 
-// 新格式使用独立目录，不读取或迁移旧格式文件。
-const notesDirectory = new URL('../../data/practice-notes-v2/', import.meta.url);
+// SQLite 使用独立目录，不读取或迁移旧 JSON 笔记。
+const notesDirectory = new URL('../../data/practice-notes/', import.meta.url);
 const MAX_CONTENT_BYTES = 32 * 1024;
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
-function noteFile(id: string, directory: URL): URL {
+function validateNoteId(id: string): void {
     if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('笔记 ID 格式不正确');
-    return new URL(`note_${id}.json`, directory);
 }
 function readString(value: unknown, name: string): string {
     if (typeof value !== 'string') throw new Error(`${name} 必须是字符串`);
@@ -58,14 +58,13 @@ export function parsePracticeNoteInput(value: unknown): PracticeNoteInput {
 }
 
 export function parsePracticeNote(value: unknown, expectedId: string): PracticeNote {
-    // 这里只验证 ID，不读取或创建文件。
-    noteFile(expectedId, notesDirectory);
+    validateNoteId(expectedId);
     if (!isRecord(value)) {
-        throw new Error('笔记文件内容必须是对象');
+        throw new Error('笔记内容必须是对象');
     }
     if (value.schemaVersion !== 2) throw new Error('不支持的笔记格式，仅支持 schemaVersion 2');
     if (value.id !== expectedId) {
-        throw new Error('笔记 ID 与文件 ID 不一致');
+        throw new Error('笔记 ID 与预期 ID 不一致');
     }
 
     const createdAt = readString(value.createdAt, 'createdAt');
@@ -79,30 +78,72 @@ export function parsePracticeNote(value: unknown, expectedId: string): PracticeN
         throw new Error('更新时间不能早于创建时间');
     }
 
-    // 复用正文校验，不为损坏的文件自动补充 ID 或时间。
+    // 复用正文校验，不为损坏的记录自动补充 ID 或时间。
     const content = parsePracticeNoteInput(value);
     return { ...content, schemaVersion: 2, id: expectedId, createdAt, updatedAt };
 }
 
-/** 已提供：校验完整数据，创建目录，先写临时文件再替换正式文件。 */
-async function writeNote(note: PracticeNote, directory: URL): Promise<void> {
-    const checked = parsePracticeNote(note, note.id);
-    const file = noteFile(checked.id, directory);
-    const temporary = new URL(`${file.href}.${randomUUID()}.tmp`);
+/** 每次操作关闭连接；更新和删除在同一事务内完成读取与写入。 */
+async function withDatabase<T>(directory: URL, operation: (db: DatabaseSync) => T): Promise<T> {
     await mkdir(directory, { recursive: true });
+    const db = new DatabaseSync(fileURLToPath(new URL('notes.sqlite', directory)));
     try {
-        await writeFile(temporary, JSON.stringify(checked, null, 2), 'utf8');
-        await rename(temporary, file);
+        db.exec(`
+            PRAGMA busy_timeout = 5000;
+            CREATE TABLE IF NOT EXISTS notes (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                tags TEXT NOT NULL,
+                problem TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            ) STRICT;
+        `);
+        return operation(db);
     } finally {
-        await rm(temporary, { force: true });
+        db.close();
     }
 }
 
-/** TODO 3（已完成）：创建并保存笔记。
- * parsePracticeNoteInput(input) → randomUUID() → new Date().toISOString()
- * → 构造 PracticeNote（两个时间相同）→ await writeNote → return note。
- * 不接受输入指定 ID/时间；保存失败时不要返回成功。
- */
+function transaction<T>(db: DatabaseSync, operation: () => T): T {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+        const result = operation();
+        db.exec('COMMIT');
+        return result;
+    } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+    }
+}
+
+function rowToNote(row: Record<string, unknown>): PracticeNote {
+    return parsePracticeNote({
+        schemaVersion: 2, id: row.id, title: row.title, content: row.content,
+        tags: JSON.parse(readString(row.tags, 'tags')),
+        ...(row.problem === null ? {} : { problem: JSON.parse(readString(row.problem, 'problem')) }),
+        createdAt: row.created_at, updatedAt: row.updated_at,
+    }, readString(row.id, 'id'));
+}
+
+function readNote(db: DatabaseSync, id: string): PracticeNote {
+    const row = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
+    if (!row) throw new Error('笔记不存在');
+    return rowToNote(row);
+}
+
+function writeNote(db: DatabaseSync, note: PracticeNote): void {
+    const checked = parsePracticeNote(note, note.id);
+    db.prepare(`INSERT INTO notes (id, title, content, tags, problem, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET title = excluded.title, content = excluded.content,
+            tags = excluded.tags, problem = excluded.problem, updated_at = excluded.updated_at`)
+        .run(checked.id, checked.title, checked.content, JSON.stringify(checked.tags),
+            checked.problem === undefined ? null : JSON.stringify(checked.problem),
+            checked.createdAt, checked.updatedAt);
+}
+
 export async function createPracticeNote(
     input: unknown,
     directory: URL = notesDirectory,
@@ -112,23 +153,16 @@ export async function createPracticeNote(
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
     const practiceNote: PracticeNote = {...practiceNoteInput, schemaVersion: 2, id, createdAt, updatedAt};
-    await writeNote(practiceNote, directory);
+    await withDatabase(directory, db => writeNote(db, practiceNote));
     return practiceNote;
 }
 
-/** TODO 4（已完成）：按 ID 读取笔记。
- * noteFile → await readFile(..., 'utf8') → JSON.parse（赋给 unknown）
- * → parsePracticeNote(value, id) → return。
- * 缺失、损坏均继续抛错，不创建空笔记覆盖原文件。
- */
 export async function getPracticeNote(
     id: string,
     directory: URL = notesDirectory,
 ): Promise<PracticeNote> {
-    const file = noteFile(id, directory);
-    const raw = await readFile(file, 'utf8');
-    const value: unknown = JSON.parse(raw);
-    return parsePracticeNote(value, id);
+    validateNoteId(id);
+    return withDatabase(directory, db => readNote(db, id));
 }
 
 export async function updatePracticeNote(
@@ -136,22 +170,25 @@ export async function updatePracticeNote(
     input: unknown,
     directory: URL = notesDirectory,
 ): Promise<PracticeNote> {
-    const oldNote = await getPracticeNote(id, directory);
-    if (!isRecord(input) || !Object.keys(input).length || Object.keys(input).some(key => !['title', 'content', 'tags', 'problem', 'appendContent'].includes(key))) throw new Error('更新必须包含有效的修改字段');
-    if ('content' in input && 'appendContent' in input) throw new Error('content 与 appendContent 不能同时使用');
-    const merged: Record<string, unknown> = { ...oldNote, ...input };
-    if ('appendContent' in input) {
-        const addition = readString(input.appendContent, 'appendContent');
-        if (!addition.trim()) throw new Error('追加内容不能为空');
-        // 原样拼接，调用方显式提供所需的换行。
-        merged.content = oldNote.content + addition;
-    }
-    if (input.problem === null) delete merged.problem;
-    const newInput = parsePracticeNoteInput(merged);
-    const newNote: PracticeNote = {...newInput, schemaVersion: 2, id: oldNote.id, createdAt: oldNote.createdAt, updatedAt: new Date().toISOString()};
+    validateNoteId(id);
+    return withDatabase(directory, db => transaction(db, () => {
+        const oldNote = readNote(db, id);
+        if (!isRecord(input) || !Object.keys(input).length || Object.keys(input).some(key => !['title', 'content', 'tags', 'problem', 'appendContent'].includes(key))) throw new Error('更新必须包含有效的修改字段');
+        if ('content' in input && 'appendContent' in input) throw new Error('content 与 appendContent 不能同时使用');
+        const merged: Record<string, unknown> = { ...oldNote, ...input };
+        if ('appendContent' in input) {
+            const addition = readString(input.appendContent, 'appendContent');
+            if (!addition.trim()) throw new Error('追加内容不能为空');
+            // 原样拼接，调用方显式提供所需的换行。
+            merged.content = oldNote.content + addition;
+        }
+        if (input.problem === null) delete merged.problem;
+        const newInput = parsePracticeNoteInput(merged);
+        const newNote: PracticeNote = {...newInput, schemaVersion: 2, id: oldNote.id, createdAt: oldNote.createdAt, updatedAt: new Date().toISOString()};
 
-    await writeNote(newNote, directory);
-    return newNote;
+        writeNote(db, newNote);
+        return newNote;
+    }));
 }
 
 
@@ -164,39 +201,37 @@ export async function searchPracticeNotes(
     const limit = filters.limit ?? 10;
     const query = filters.query?.trim().toLowerCase() ?? '';
     const tag = filters.tag?.trim().toLowerCase();
-    let entries;
-    try { entries = await readdir(directory, { withFileTypes: true }); }
-    catch (error) {
-        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return { matches: [], total: 0 };
-        throw error;
-    }
-    const matches = [];
-    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-        signal?.throwIfAborted();
-        const match = /^note_([a-zA-Z0-9_-]{1,128})\.json$/.exec(entry.name);
-        if (!entry.isFile() || !match) continue;
-        const note = await getPracticeNote(match[1]!, directory);
-        if (filters.number !== undefined && note.problem?.number !== filters.number) continue;
-        if (tag && !note.tags.some(value => value.toLowerCase() === tag)) continue;
-        const text = [note.title, note.content, ...note.tags].join('\n').toLowerCase();
-        if (query && !text.includes(query)) continue;
-        const matchAt = query ? note.content.toLowerCase().indexOf(query) : 0;
-        const start = Math.max(0, matchAt - 80);
-        matches.push({ id: note.id, title: note.title, problem: note.problem, tags: note.tags,
-            excerpt: note.content.slice(start, start + 300), updatedAt: note.updatedAt });
-    }
-    matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
-    return { matches: matches.slice(0, limit), total: matches.length };
+    signal?.throwIfAborted();
+    return withDatabase(directory, db => {
+        const matches = [];
+        for (const row of db.prepare('SELECT * FROM notes').iterate()) {
+            signal?.throwIfAborted();
+            const note = rowToNote(row);
+            if (filters.number !== undefined && note.problem?.number !== filters.number) continue;
+            if (tag && !note.tags.some(value => value.toLowerCase() === tag)) continue;
+            const text = [note.title, note.content, ...note.tags].join('\n').toLowerCase();
+            if (query && !text.includes(query)) continue;
+            const matchAt = query ? note.content.toLowerCase().indexOf(query) : 0;
+            const start = Math.max(0, matchAt - 80);
+            matches.push({ id: note.id, title: note.title, problem: note.problem, tags: note.tags,
+                excerpt: note.content.slice(start, start + 300), updatedAt: note.updatedAt });
+        }
+        matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+        return { matches: matches.slice(0, limit), total: matches.length };
+    });
 }
 
 
 /** 只删除指定笔记；不存在时抛错，不伪装成成功。已导出的文件保留。 */
 export async function deletePracticeNote(id: string, directory: URL = notesDirectory, signal?: AbortSignal) {
-    const file = noteFile(id, directory);
-    const note = await getPracticeNote(id, directory);
+    validateNoteId(id);
     signal?.throwIfAborted();
-    await rm(file);
-    return { id, title: note.title, deleted: true };
+    return withDatabase(directory, db => transaction(db, () => {
+        const note = readNote(db, id);
+        signal?.throwIfAborted();
+        db.prepare('DELETE FROM notes WHERE id = ?').run(id);
+        return { id, title: note.title, deleted: true };
+    }));
 }
 
 /** 添加题号与标题，正文原样保留，不改写代码围栏。 */

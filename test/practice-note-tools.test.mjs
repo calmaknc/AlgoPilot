@@ -1,6 +1,7 @@
 import test from 'node:test';
+import { DatabaseSync } from 'node:sqlite';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, readFile, readdir } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -8,7 +9,7 @@ import { createToolRegistry } from '../src/tools/registry.ts';
 import { toolDefinitions } from '../src/tools/index.ts';
 import { createDeletePracticeNoteTool, createExportPracticeNoteTool, createSavePracticeNoteTool, createGetPracticeNoteTool, createUpdatePracticeNoteTool, createSearchPracticeNotesTool } from '../src/tools/implementations.ts';
 
-test('刷题笔记工具：保存→组合搜索→读取→修改，参数、损坏文件和取消处理', async () => {
+test('刷题笔记工具：保存→组合搜索→读取→修改，参数、损坏记录和取消处理', async () => {
     const root = await mkdtemp(join(tmpdir(), 'practice-tools-'));
     const directory = pathToFileURL(root + '/notes/');
     const { executeTool } = createToolRegistry([createSavePracticeNoteTool(directory), createGetPracticeNoteTool(directory), createUpdatePracticeNoteTool(directory), createSearchPracticeNotesTool(directory), createDeletePracticeNoteTool(directory), createExportPracticeNoteTool(directory, pathToFileURL(root + '/exports/'))]);
@@ -60,7 +61,10 @@ test('刷题笔记工具：保存→组合搜索→读取→修改，参数、�
         assert.equal((await call('get_practice_note', { id: saved.id })).ok, false);
         assert.equal((await call('search_practice_notes', {})).total, 0);
         assert.equal(await readFile(exported.path, 'utf8'), markdown);
-        await writeFile(new URL('note_broken.json', directory), '{}');
+        const broken = await call('save_practice_note', { note });
+        const db = new DatabaseSync(join(root, 'notes', 'notes.sqlite'));
+        try { db.prepare('UPDATE notes SET tags = ? WHERE id = ?').run('{', broken.id); }
+        finally { db.close(); }
         assert.equal((await call('search_practice_notes', {})).ok, false);
     } finally { await rm(root, { recursive: true, force: true }); }
 });

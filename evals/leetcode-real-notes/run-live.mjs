@@ -1,5 +1,7 @@
 import { mkdtemp, mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { appendFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { getPracticeNote, searchPracticeNotes } from '../../src/storage/practice-notes.ts';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -36,8 +38,9 @@ async function snapshot(root) {
     await walk(root); return result;
 }
 async function notesAt(directory) {
-    return Promise.all((await readdir(directory)).filter(n => /^note_.*\.json$/.test(n)).sort()
-        .map(async n => JSON.parse(await readFile(join(directory,n),'utf8'))));
+    const url = pathToFileURL(directory + '/');
+    const { matches } = await searchPracticeNotes({ limit: Number.MAX_SAFE_INTEGER }, url);
+    return Promise.all(matches.sort((a,b) => a.id.localeCompare(b.id)).map(note => getPracticeNote(note.id, url)));
 }
 const protectedRoots = [fileURLToPath(new URL('../../data/', base)), ...(process.env.EVAL_SOURCE_ROOT ? [process.env.EVAL_SOURCE_ROOT] : [])];
 const beforeProtected = await Promise.all(protectedRoots.map(snapshot));
@@ -48,7 +51,7 @@ const manifest = {
     model: process.env.DEEPSEEK_MODEL, reasoningEffort: 'high', maxModelCalls: 5,
     modelRequestTimeoutMs: 60000, perCaseTimeoutMs: 240000,
     gitCommit: execFileSync('git', ['rev-parse','HEAD'],{encoding:'utf8'}).trim(),
-    codeHashes: Object.fromEntries(await Promise.all(['src/agent/runner.ts','src/tools/index.ts','src/tools/implementations.ts','evals/leetcode-real-notes/cases.json','evals/leetcode-real-notes/run-live.mjs'].map(async p => [p,hash(await readFile(new URL('../../'+p,base)))]))),
+    codeHashes: Object.fromEntries(await Promise.all(['src/storage/practice-notes.ts','src/agent/runner.ts','src/tools/index.ts','src/tools/implementations.ts','evals/leetcode-real-notes/cases.json','evals/leetcode-real-notes/run-live.mjs'].map(async p => [p,hash(await readFile(new URL('../../'+p,base)))]))),
     protectedRoots, beforeProtected, results: []
 };
 const save = () => writeFile(new URL('manifest.json',reports),JSON.stringify(manifest,null,2));
@@ -61,11 +64,18 @@ try {
         const exportsDirectory = join(caseDirectory,'exports');
         const conversationsDirectory = join(caseDirectory,'conversations');
         for (const dir of [notesDirectory,exportsDirectory,conversationsDirectory]) await mkdir(dir,{recursive:true});
-        for (const id of item.initialNoteIds) {
-            const fixture = fixtures.find(note => note.id === id);
-            assert(fixture);
-            await writeFile(join(notesDirectory,`note_${id}.json`),JSON.stringify(fixture,null,2));
-        }
+        // 初始化隔离的 SQLite 库，再按评测固定 ID 与时间写入夹具。
+        await searchPracticeNotes({}, pathToFileURL(notesDirectory + '/'));
+        const db = new DatabaseSync(join(notesDirectory, 'notes.sqlite'));
+        try {
+            const insert = db.prepare('INSERT INTO notes (id, title, content, tags, problem, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            for (const id of item.initialNoteIds) {
+                const fixture = fixtures.find(note => note.id === id);
+                assert(fixture);
+                insert.run(fixture.id, fixture.title, fixture.content, JSON.stringify(fixture.tags),
+                    fixture.problem === undefined ? null : JSON.stringify(fixture.problem), fixture.createdAt, fixture.updatedAt);
+            }
+        } finally { db.close(); }
         const tools = createAgentTools({notesDirectory:pathToFileURL(notesDirectory+'/'),exportsDirectory:pathToFileURL(exportsDirectory+'/')});
         const service = createAgentService({directory:pathToFileURL(conversationsDirectory+'/'),runModel:(messages, onChunk, onTool, signal, onModelCall, onMemory) => requestModel(messages, onChunk, onTool, signal, onModelCall, tools, { directory: pathToFileURL(join(caseDirectory, 'context') + '/'), memoryDirectory: pathToFileURL(join(caseDirectory, 'memory') + '/'), onMemory })});
         const conversation = await service.newConversation(item.id);
