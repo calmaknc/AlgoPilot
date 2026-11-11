@@ -120,7 +120,11 @@ export function createAgentService(options: { directory?: URL; runModel?: ModelR
             } catch (error) {
                 callbacks.signal?.throwIfAborted();
                 if (error instanceof ContextLimitError) throw new AppError(502, 'CONTEXT_LIMIT', error.message);
-                throw new AppError(502, 'MODEL_ERROR', '模型调用失败，本轮未保存');
+                if (error instanceof AppError) throw error;
+                const detail = error instanceof Error ? error.message : String(error);
+                throw new AppError(502, 'MODEL_ERROR',
+                    `Agent 执行失败：${detail}。本轮对话未保存；已完成的笔记和记忆写入不会回滚。`,
+                    { cause: error });
             }
             // 保存开始前是取消边界；开始写盘后必须等待写入完成。
             callbacks.signal?.throwIfAborted();

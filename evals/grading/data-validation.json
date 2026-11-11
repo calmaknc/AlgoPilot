@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "date": "2026-11-11",
+  "checks": [
+    "18 unique tasks / 25 prompt files / 10 source problems",
+    "232 unique-within-problem hidden samples",
+    "10 byte-identical source snapshots, original code hashes and line numbers match",
+    "11 fixtures accepted by production PracticeNote parser",
+    "required tools exist in production registry",
+    "Markdown export expectation matches production formatter",
+    "prompt SHA-256 matches cases.json",
+    "rubric/document local links resolve",
+    "exact save/append content markers match expectations"
+  ],
+  "notPerformed": [
+    "real agent run",
+    "API calls",
+    "production data writes",
+    "new evaluation runner implementation"
+  ],
+  "referenceValidation": "reference-validation.json"
+}

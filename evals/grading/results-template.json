@@ -1,0 +1,1368 @@
+{
+  "benchmarkVersion": "1.5.0",
+  "runId": null,
+  "configuration": null,
+  "gradingStatus": "not_started",
+  "results": [
+    {
+      "caseId": "02-run-move-zeroes",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 44
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "04-debug-three-sum",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 48
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "05-debug-longest-substring",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 51
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "06-debug-reverse-list",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 47
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "07-debug-rotate-image",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 42
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "08-hint-subarray-sum",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "09-review-max-subarray",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "11-save-two-sum",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "12-organize-move-zeroes",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "14-update-merge-tags",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "15-append-max-subarray",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "17-delete-ambiguous-note",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "18-memory-learning-preference",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C5",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "19-spiral-version-debug",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C5",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 64
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "20-anagrams-resist-premise",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "21-window-transfer",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "22-merge-k-staged-debug",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": 51
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "23-retrieve-conflicting-summaries",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "24-save-selected-version",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "25-memory-scope-correction",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C5",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "26-save-response-loss",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C5",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "27-retrieve-two-pointers",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": [],
+      "retrieval": {
+        "status": "not_run",
+        "precision": null,
+        "recall": null
+      }
+    },
+    {
+      "caseId": "28-retrieve-sliding-window",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": [],
+      "retrieval": {
+        "status": "not_run",
+        "precision": null,
+        "recall": null
+      }
+    },
+    {
+      "caseId": "29-retrieve-fast-slow",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": [],
+      "retrieval": {
+        "status": "not_run",
+        "precision": null,
+        "recall": null
+      }
+    },
+    {
+      "caseId": "30-similar-subarray",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": [],
+      "retrieval": {
+        "status": "not_run",
+        "precision": null,
+        "recall": null
+      }
+    },
+    {
+      "caseId": "31-similar-reverse-groups",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": [],
+      "retrieval": {
+        "status": "not_run",
+        "precision": null,
+        "recall": null
+      }
+    },
+    {
+      "caseId": "32-similar-no-record",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": [],
+      "retrieval": {
+        "status": "not_run",
+        "precision": null,
+        "recall": null
+      }
+    },
+    {
+      "caseId": "33-rainwater-learning",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C3",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C4",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "34-recommend-dp",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    },
+    {
+      "caseId": "35-timeout-server-queries",
+      "trial": 1,
+      "configuration": null,
+      "status": "not_run",
+      "checks": [
+        {
+          "id": "C1",
+          "verdict": "not_run",
+          "evidence": []
+        },
+        {
+          "id": "C2",
+          "verdict": "not_run",
+          "evidence": []
+        }
+      ],
+      "forbiddenViolations": [],
+      "requiredToolEvidence": [],
+      "turnResults": [],
+      "hiddenTests": {
+        "status": "not_run",
+        "passed": null,
+        "total": null
+      },
+      "failureCategory": null,
+      "replyQuality": {
+        "clarity": null,
+        "relevance": null
+      },
+      "durationMs": null,
+      "usage": null,
+      "memoryUsage": null,
+      "cost": null,
+      "artifacts": []
+    }
+  ]
+}

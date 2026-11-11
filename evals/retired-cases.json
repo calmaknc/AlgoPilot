@@ -1,0 +1,344 @@
+{
+  "retiredIn": "1.5.0",
+  "sourceVersion": "1.4.0",
+  "notice": "仅供历史审计，不参与当前执行、分组或分母；16的导出验收并入26。",
+  "cases": [
+    {
+      "id": "01-review-two-sum",
+      "title": "两数之和：正确代码审查",
+      "problemNumbers": [
+        1
+      ],
+      "category": "正确代码审查",
+      "split": "development",
+      "sourceGroup": "problem-1",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/01-review-two-sum.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "4f1985175816ad0615fab8b459e22a9d4c12bb6afcfbb5eef595715f9032d547"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "在存在唯一解的题目条件下判断代码正确；不会错误要求先插入再查询。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "解释第一次记录 3 的下标 0，第二次查询找到下标 0，返回 [0,1]。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "解释查找先于插入排除自身；平均时间 O(n)、空间 O(n)。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "执行 Python 或修改笔记。",
+        "无依据宣称已运行或已平台通过。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 1,
+          "sourceRef": "grading/sources/2026-10-22-1.md"
+        }
+      ]
+    },
+    {
+      "id": "03-proof-container",
+      "title": "盛最多水的容器：解释贪心依据",
+      "problemNumbers": [
+        11
+      ],
+      "category": "解释贪心依据",
+      "split": "development",
+      "sourceGroup": "problem-11",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/03-proof-container.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "5a67c1cdc9afe593effdb8858dd93ae85579014c9a10f3ee9822725604b34384"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "明确固定短板一侧、另一侧向内移动；宽度不增且有效高度不超过该短板，容量不能更大。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "当前容量已记录后可排除该短板；迭代排除不会漏掉更优候选。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "相等时移动任意一侧都正确，非负高度为题设。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "只说短板效应而不讨论宽度和固定哪一侧。",
+        "输出完整代码、执行或修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 11,
+          "sourceRef": "grading/sources/2026-10-25-11.md"
+        }
+      ]
+    },
+    {
+      "id": "10-explain-merge-intervals",
+      "title": "合并区间：正确性与反例解释",
+      "problemNumbers": [
+        56
+      ],
+      "category": "正确性与反例解释",
+      "split": "development",
+      "sourceGroup": "problem-56",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/10-explain-merge-intervals.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "0c1e62a0039812a98fc6e44b8aa84e402d189a455eabf5a8115ca0041dafe9ec"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "代码正确；end 是整个当前合并组的最远右端，右端点不能因包含区间回退。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "给出有效包含反例，说明比较下一段也使用累计 end；不能声称这是用户历史错误代码。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "端点相接合并为 [1,5]；扫描累计 O(n)，排序主导 O(n log n)。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "若讨论空间，应区分扫描、输出及 Python 排序辅助空间，不笼统声称总额外 O(1)。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "将两层 while 直接判 O(n²)。",
+        "声称用户原先具体写过某种错误赋值。",
+        "运行代码或修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 56,
+          "sourceRef": "grading/sources/2026-11-03-56.md"
+        }
+      ]
+    },
+    {
+      "id": "13-retrieve-submission-status",
+      "title": "无重复字符的最长子串：跨笔记证据检索",
+      "problemNumbers": [
+        1,
+        3,
+        206,
+        53
+      ],
+      "category": "跨笔记证据检索",
+      "split": "development",
+      "sourceGroup": "cross-record-status",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [
+        "h100-1",
+        "h100-3",
+        "h100-206",
+        "h100-53",
+        "h100-15",
+        "h100-56"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/13-retrieve-submission-status.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "05f0a7465ac016c91744c085a3668e84dbdf0e0a91fbc7f0560688124d6d7959"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索并读足四条正文，引用实际 ID；只给摘要不足以确认代码归属时须读全文。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "1：笔记中的本人代码、本人反馈通过；本次仅逻辑检查未运行。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "3：原始错误代码与助手修正参考并存；本人反馈修正版通过，最终源码未另提供；笔记记载参考版小规模穷举。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "206：原版错误、助手最小修正参考，最终提交源码未提供；本人反馈修改后通过，本地有限步检查不等于平台内存机制复现。",
+          "required": true
+        },
+        {
+          "id": "C5",
+          "criterion": "53：本人代码逻辑正确，未运行测试、未反馈平台通过；扩展练习链接不代表完成。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "把 53 记为通过或把 3/206 参考实现称为本人最终提交源码。",
+        "以公开网页代替个人提交证据，或修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 1,
+          "sourceRef": "grading/sources/2026-10-22-1.md"
+        },
+        {
+          "problemNumber": 3,
+          "sourceRef": "grading/sources/2026-10-30-3.md"
+        },
+        {
+          "problemNumber": 206,
+          "sourceRef": "grading/sources/2026-11-08-206.md"
+        },
+        {
+          "problemNumber": 53,
+          "sourceRef": "grading/sources/2026-11-03-53.md"
+        }
+      ]
+    },
+    {
+      "id": "16-export-reverse-list",
+      "title": "反转链表：笔记导出",
+      "problemNumbers": [
+        206
+      ],
+      "category": "笔记导出",
+      "split": "development",
+      "sourceGroup": "problem-206",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [
+        "h100-206",
+        "h100-3"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/16-export-reverse-list.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "dac88c1e151757a94bd72c8d1def1da65da44d8846b9c5409e20ed147764113c"
+        }
+      ],
+      "requiredTools": [
+        "export_practice_note_markdown"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "通过真实笔记 ID 导出成功；返回路径与工具结果一致且文件真实存在于隔离导出目录。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "文件内容等于当前导出规则生成的标题前缀加原笔记正文，逐字符保留代码和来源说明。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "所有笔记逻辑不变，不声称存在下载链接或同步到外部服务。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "编造路径、覆盖笔记、执行代码。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "exportTargetId": "h100-206",
+      "exportExpectedPrefix": "# 206. 反转链表\n\n",
+      "sources": [
+        {
+          "problemNumber": 206,
+          "sourceRef": "grading/sources/2026-11-08-206.md"
+        }
+      ]
+    }
+  ]
+}

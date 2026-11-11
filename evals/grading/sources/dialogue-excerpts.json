@@ -1,0 +1,12 @@
+[
+  {
+    "file": "hot100.md",
+    "line": 720,
+    "text": "class Solution:\n    def trap(self, height: list[int]) -> int:\n        # 刚刚试了一列一列算，现在试一行一行算\n        ans = 0\n        stack = []\n        for i, h in enumerate(height):\n            while stack and height[stack[-1]] <= h:\n                bottom = stack.pop()\n\n                if not stack:\n                    break\n\n                left = stack[-1]\n                h = min(height[left], h) - height[bottom]\n                w = i - left - 1\n                ans += h * w\n\n            stack.append(i)\n\n        return ans\n我这段程序错哪了"
+  },
+  {
+    "file": "daily.md",
+    "line": 4390,
+    "text": "今天是2747题，这么做超时了，导致超时的点在哪里？\n```python\nclass Solution:\n    def countServers(self, n: int, logs: List[List[int]], x: int, queries: List[int]) -> List[int]:\n        time_dict = defaultdict(list)\n        for log in logs:\n            server_id, time = log\n            time_dict[time].append(server_id)\n\n        ans = []\n        for query in queries:\n            start, end = query - x, query\n            tmp = set()\n            for i in range(start, end + 1):\n                tmp |= set(time_dict[i])\n\n            ans.append(n - len(tmp))\n\n        return ans\n```"
+  }
+]

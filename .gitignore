@@ -40,3 +40,6 @@ temp/
 evals/**/runs/
 evals/**/REPORT-*.md
 evals/**/current-results.json
+
+daily.md
+hot100.md

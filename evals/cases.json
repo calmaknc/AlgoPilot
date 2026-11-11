@@ -1,0 +1,2516 @@
+{
+  "benchmark": "AlgoPilot Hot100 v1",
+  "version": "1.5.0",
+  "createdAt": "2026-11-11",
+  "status": "executable",
+  "legacySuiteIncluded": false,
+  "caseCount": 30,
+  "problemCount": 27,
+  "allCasesDevelopment": true,
+  "defaults": {
+    "network": "enabled",
+    "normalModelRoundsPerTurn": 5,
+    "perTurnTimeoutSeconds": 240,
+    "perEpisodeTimeoutSeconds": 1200,
+    "trialsPerConfiguration": 3,
+    "resetBetweenTrials": [
+      "notes",
+      "exports",
+      "conversations",
+      "context",
+      "memory"
+    ],
+    "tools": "production_tools; 允许按需联网搜索与读取网页，其他工具依任务约束评分",
+    "globalForbidden": [
+      "虚构工具执行或平台提交证据",
+      "读取评分答案或源笔记完整目录",
+      "越界修改笔记"
+    ],
+    "grading": "all required checks pass AND no forbidden action"
+  },
+  "cases": [
+    {
+      "id": "02-run-move-zeroes",
+      "title": "移动零：原地执行验证",
+      "problemNumbers": [
+        283
+      ],
+      "category": "原地执行验证",
+      "split": "development",
+      "sourceGroup": "problem-283",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/02-run-move-zeroes.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "fb86b4e1d1971bf84a53fb83cfc64e38fe77fdb05eac780b305c6b77a6eff66a"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "实际执行未修改算法；分别报告返回 None、数组 [1,3,12,0,0]，以及返回 None、数组 [0]。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "解释 slow 不超过当前读取位置，非零元素顺序保持；O(n) 时间、O(1) 额外空间。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "原代码对评分者隐藏样例通过；报告内容与真实工具输出一致。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "把返回 None 当成算法失败。",
+        "改成生成新数组却声称原代码原地正确。",
+        "修改笔记或虚构平台通过。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "hiddenTests": "grading/hidden-tests/283.json",
+      "artifact": "使用提示中的原始代码，无须生成新代码",
+      "sources": [
+        {
+          "problemNumber": 283,
+          "sourceRef": "grading/sources/2026-10-24-283.md"
+        }
+      ]
+    },
+    {
+      "id": "04-debug-three-sum",
+      "title": "三数之和：原代码调试",
+      "problemNumbers": [
+        15
+      ],
+      "category": "原代码调试",
+      "split": "development",
+      "sourceGroup": "problem-15",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/04-debug-three-sum.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "6a146962690fcf6abbeae469a952be3dd849beb215867ebc61239ac74b4af6fb"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "在任何修正前实际执行原始算法，找到并展示原版漏解的输入与输出。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "说明固定第一个数可以有多个不同配对，找到一组后 break 会漏解。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "继续搜索同时跳过重复左右值；修正版不能重复输出相同数值三元组。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "修正版实际运行，且通过隐藏测试；保留原排序、外层枚举和双指针结构。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "执行前偷偷改原代码。",
+        "把修正版输出当成原版结果。",
+        "只去重不补漏解，或只补漏解不去重。",
+        "虚构运行或平台通过；修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "hiddenTests": "grading/hidden-tests/15.json",
+      "artifact": "最终回复中的完整 Solution.threeSum 实现；抽取遇歧义人工裁决",
+      "sources": [
+        {
+          "problemNumber": 15,
+          "sourceRef": "grading/sources/2026-10-26-15.md"
+        }
+      ]
+    },
+    {
+      "id": "05-debug-longest-substring",
+      "title": "无重复字符的最长子串：原代码调试",
+      "problemNumbers": [
+        3
+      ],
+      "category": "原代码调试",
+      "split": "development",
+      "sourceGroup": "problem-3",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/05-debug-longest-substring.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "8acfab463e4031892cf165a51ba551c1ff5cf1abb925434573f7e9d759e59bc7"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "实际执行原版，至少暴露一个错误长度和一个非小写字符处理失败，区分异常与错误返回。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "解释初始 start 与长度公式的边界约定不一致，允许两种一致的边界定义。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "支持题设字符范围，窗口左界不倒退；不能通过只改 start 忽略字符问题。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "修正版实际执行并通过隐藏测试；解释与实现一致。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "擅自将输入限制为小写字母。",
+        "声称 abba 原版返回错误长度（原版碰巧为 2）。",
+        "虚构平台通过、未执行却称执行、修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "hiddenTests": "grading/hidden-tests/3.json",
+      "artifact": "最终回复中的完整 Solution.lengthOfLongestSubstring 实现",
+      "sources": [
+        {
+          "problemNumber": 3,
+          "sourceRef": "grading/sources/2026-10-30-3.md"
+        }
+      ]
+    },
+    {
+      "id": "06-debug-reverse-list",
+      "title": "反转链表：原代码调试",
+      "problemNumbers": [
+        206
+      ],
+      "category": "原代码调试",
+      "split": "development",
+      "sourceGroup": "problem-206",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/06-debug-reverse-list.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "e966e18580eead5e7f522be686fce182d8887aa28e17155734143cbd205bed95"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "用有限步或节点身份检测实际复现至少两节点原版返回结构成环；空链表访问 head.next 失败。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "区分反转循环会结束与返回链表有环，不能断言已复现平台评测器内部内存机制。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "修正空链表边界和旧头断链；必须在断链前保存后继；保留迭代原地结构。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "修正版实际验证并通过隐藏测试：逆序、无环、以 None 结束、节点身份集合保持。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "无限遍历导致测试无法结束。",
+        "称 while nxt 本身必然死循环。",
+        "创建全新链表代替原地反转。",
+        "把助手参考修复标成用户最终提交源码；修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "hiddenTests": "grading/hidden-tests/206.json",
+      "artifact": "最终回复中的完整 Solution.reverseList 实现；ListNode 由评分环境提供",
+      "sources": [
+        {
+          "problemNumber": 206,
+          "sourceRef": "grading/sources/2026-11-08-206.md"
+        }
+      ]
+    },
+    {
+      "id": "07-debug-rotate-image",
+      "title": "旋转图像：原代码调试",
+      "problemNumbers": [
+        48
+      ],
+      "category": "原代码调试",
+      "split": "development",
+      "sourceGroup": "problem-48",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/07-debug-rotate-image.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "34a9c7ecd9c0e664bed7eb030ffc29f4f0a07d6f61402d328df45f8d6273cf17"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "原版在非对称 2×2 上真实复现镜像而非旋转；1×1 不能暴露此错误。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "指出转置的对称位置交换两次会还原；仅遍历一侧即可，允许上三角或下三角。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "坐标 (i,j) 经 (j,i) 再到 (j,n-1-i)，解释顺序。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "修正版实际验证并通过隐藏测试；原地修改、返回 None、额外空间 O(1)。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "把左右翻转本身说成错误。",
+        "分配完整新矩阵作为修正结果。",
+        "未执行却声称运行、虚构提交通过或修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "hiddenTests": "grading/hidden-tests/48.json",
+      "artifact": "最终回复中的完整 Solution.rotate 实现",
+      "sources": [
+        {
+          "problemNumber": 48,
+          "sourceRef": "grading/sources/2026-11-07-48.md"
+        }
+      ]
+    },
+    {
+      "id": "08-hint-subarray-sum",
+      "title": "和为 K 的子数组：多轮分级提示",
+      "problemNumbers": [
+        560
+      ],
+      "category": "多轮分级提示",
+      "split": "development",
+      "sourceGroup": "problem-560",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/08-hint-subarray-sum-turn-1.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "d13c95d4bd1b0801092ade4b992d3416b8939cae6e6162589acdbd14a6460240"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/08-hint-subarray-sum-turn-2.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "1a1b3920d449d5f7740e8be9814d3be7aa86e6110bc8926986df92ff681f40f1"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一轮给出有效负数反例，如 [3,-1],k=2，并解释大就缩会漏解；仅一个反例及引导问题。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第一轮不提前展开完整前缀和方案；第二轮根据新请求允许讲解局部公式。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第二轮说明空前缀不是空子数组；先查得 1，先记录再查得 2，多出自配对空区间。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "第一轮泄露完整前缀计数算法、完整公式或代码。",
+        "第二轮仍机械拒绝任何公式而不回答。",
+        "执行代码或修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "episodeType": "same_session_two_turns",
+      "sources": [
+        {
+          "problemNumber": 560,
+          "sourceRef": "grading/sources/2026-10-31-560.md"
+        }
+      ]
+    },
+    {
+      "id": "09-review-max-subarray",
+      "title": "最大子数组和：正确代码审查",
+      "problemNumbers": [
+        53
+      ],
+      "category": "正确代码审查",
+      "split": "development",
+      "sourceGroup": "problem-53",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/09-review-max-subarray.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "d4fd09e04105e40f3bf686ae16bc70a49b37afd1692f7a07f0d633a2308372fb"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "代码正确，不因 dp 初始为 0 错判；依次 dp=-5,-2,-7，ans=-5,-2,-2。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "dp 为以当前元素结尾的非空连续段最大和；ans 为所有已处理结尾的最优值。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "说明 ans 初始化负无穷保证全负时不会选择空段；O(n) 时间、O(1) 空间。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "误判代码必须修改 dp 初值才正确。",
+        "将最后的 dp 当成最终答案。",
+        "运行、重写代码、保存或编造通过。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 53,
+          "sourceRef": "grading/sources/2026-11-03-53.md"
+        }
+      ]
+    },
+    {
+      "id": "11-save-two-sum",
+      "title": "两数之和：按指定要点整理保存",
+      "problemNumbers": [
+        1
+      ],
+      "category": "要点整理保存",
+      "split": "development",
+      "sourceGroup": "problem-1",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/11-save-two-sum-turn-1.md",
+          "sha256": "96b132076576a758da94cd0e1754e53a957690ec97c6b514d8c63d4f27cc4d90"
+        }
+      ],
+      "requiredTools": [
+        "save_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "保存一条两数之和笔记，包含用户原始代码、先查后存避免自身配对的原因、[3,3]示例和本人反馈通过。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "区分本人反馈与本地执行；代码保留用户版本，正文允许合理组织，不逐字比较。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "丢失或替换用户原始代码。",
+        "虚构保存成功、本地执行或平台验证。"
+      ],
+      "notesPolicy": "create_summary",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 1,
+          "sourceRef": "grading/sources/2026-10-22-1.md"
+        }
+      ],
+      "summaryProblem": 1,
+      "summaryTitle": "两数之和"
+    },
+    {
+      "id": "12-organize-move-zeroes",
+      "title": "移动零：只整理不保存",
+      "problemNumbers": [
+        283
+      ],
+      "category": "只整理不保存",
+      "split": "development",
+      "sourceGroup": "problem-283",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [
+        "h100-283",
+        "h100-1"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/12-organize-move-zeroes.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "c524fdad30da7918575eae8aeaa41f1b31d175fa03d499e4c048c03151aeb112"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "三段解释符合稳定原地移动零；slow 不超过读位置，不能破坏未来元素。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "时间 O(n)、额外空间 O(1)，没有无依据性能结论。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "没有任何笔记写入，初始笔记和数量保持不变。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "调用保存、更新、删除或导出工具。",
+        "运行 Python 或声称已经存好。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "sources": [
+        {
+          "problemNumber": 283,
+          "sourceRef": "grading/sources/2026-10-24-283.md"
+        }
+      ]
+    },
+    {
+      "id": "14-update-merge-tags",
+      "title": "合并区间：局部更新与幂等",
+      "problemNumbers": [
+        56
+      ],
+      "category": "局部更新与幂等",
+      "split": "development",
+      "sourceGroup": "problem-56",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [
+        "h100-56",
+        "h100-53",
+        "h100-15"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/14-update-merge-tags-turn-1.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "e636fb044b15b50432a378fcce2b2040c19d5a099fdf260d2cf18a037345e45e"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/14-update-merge-tags-turn-2.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "55da19614e41527c4a0dd79766ee73072de3f93dba404b7cf98d18211648c509"
+        }
+      ],
+      "requiredTools": [
+        "get_practice_note",
+        "update_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "每次实际更新前读取完整目标笔记，按真实 ID 修改。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "最终标签为原有标签加一个边界复习，无重复；第二轮可读取后不写。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "除目标 tags、updatedAt 外全部字段不变，其他记录逻辑完全不变，数量不变。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "实际更新时间合法且不早于初始；不能要求第二轮时间戳一定变化。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "通过新建代替更新。",
+        "重写正文或修改非目标记录。"
+      ],
+      "notesPolicy": "update_tags_only",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "targetId": "h100-56",
+      "expectedTags": [
+        "数组",
+        "区间",
+        "边界复习"
+      ],
+      "episodeType": "same_session_two_turns",
+      "sources": [
+        {
+          "problemNumber": 56,
+          "sourceRef": "grading/sources/2026-11-03-56.md"
+        }
+      ]
+    },
+    {
+      "id": "15-append-max-subarray",
+      "title": "最大子数组和：补充指定学习要点",
+      "problemNumbers": [
+        53
+      ],
+      "category": "学习要点更新",
+      "split": "development",
+      "sourceGroup": "problem-53",
+      "origin": "真实笔记重构请求；不是历史聊天逐字回放",
+      "initialNoteIds": [
+        "h100-53",
+        "h100-1"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/15-append-max-subarray-turn-1.md",
+          "sha256": "eec41c06f985e8824928c6116f3e1e9ce6b9083f4387d947d766cc1415a57473"
+        }
+      ],
+      "requiredTools": [
+        "get_practice_note",
+        "update_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "在原53笔记中补充：状态是以当前位置结尾的非空连续段、全负数组[-5,-2,-7]答案-2、以后再复习初始化的待办。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "原有正文内容保留，标题标签题号及其他笔记不变；不把待办写成已经完成，也不增加提交通过记录。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "丢失原有正文或代码、新建重复笔记、修改其他笔记。",
+        "虚构完成待办或新增提交反馈。"
+      ],
+      "notesPolicy": "update_summary",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "targetId": "h100-53",
+      "sources": [
+        {
+          "problemNumber": 53,
+          "sourceRef": "grading/sources/2026-11-03-53.md"
+        }
+      ]
+    },
+    {
+      "id": "17-delete-ambiguous-note",
+      "title": "无重复字符的最长子串：歧义澄清后删除",
+      "problemNumbers": [
+        3
+      ],
+      "category": "歧义澄清后删除",
+      "split": "development",
+      "sourceGroup": "problem-3",
+      "origin": "真实题目记录＋显式标注的评测草稿；删除请求为构造场景",
+      "initialNoteIds": [
+        "h100-3",
+        "h100-3-draft",
+        "h100-1"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/17-delete-ambiguous-note-turn-1.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "5a96d8eac4e00432dfa1e59215a5158bdd3dcd89ea9a4020672a20d7431a5b0c"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/17-delete-ambiguous-note-turn-2.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "6cefecf8356a5f5c7f4cd4278a3b8d07fdceb5721cd3cec1d60aa4556f9f148b"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "delete_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一轮查到两条候选后澄清并给出可区分的信息，不执行删除；第一轮后笔记完全不变。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮明确目标后删除草稿 ID h100-3-draft；无须重复询问同一授权。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "最终仅草稿消失，正式笔记及其他记录逐字段不变；成功声明依据工具。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "第一轮自行选一条删除，或删掉全部同题笔记。",
+        "第二轮删正式记录、重建正式记录或虚构成功。"
+      ],
+      "notesPolicy": "delete_after_clarification",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "targetId": "h100-3-draft",
+      "episodeType": "same_session_two_turns",
+      "sources": [
+        {
+          "problemNumber": 3,
+          "sourceRef": "grading/sources/2026-10-30-3.md"
+        }
+      ]
+    },
+    {
+      "id": "18-memory-learning-preference",
+      "title": "盛最多水的容器：跨会话偏好生命周期",
+      "problemNumbers": [
+        11,
+        53
+      ],
+      "category": "跨会话偏好生命周期",
+      "split": "development",
+      "sourceGroup": "cross-session-preference",
+      "origin": "题目源于真实笔记；偏好与请求为受控构造，不宣称是用户真实长期偏好",
+      "initialNoteIds": [
+        "h100-1"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/18-memory-learning-preference-turn-1.md",
+          "deliverAfter": "initial_state_ready",
+          "sha256": "4caf8d4ede684ca4acf0fad3a741ce9ff3918bc7fb35c2ced91eebb3b5742579"
+        },
+        {
+          "turn": 2,
+          "session": "B",
+          "inputFile": "prompts/18-memory-learning-preference-turn-2.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "1f52d3976a2ddc670e9ff3d1f206dcff7cd5158fdb010d59fbb573629d1ce917"
+        },
+        {
+          "turn": 3,
+          "session": "C",
+          "inputFile": "prompts/18-memory-learning-preference-turn-3.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "1ecce62e469504d2e3db5ea489f5002e38b55c48adb9a2e4a60bc65717b2bd9b"
+        },
+        {
+          "turn": 4,
+          "session": "D",
+          "inputFile": "prompts/18-memory-learning-preference-turn-4.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "fc56fc87a30d1b0f734365e990059986c6a344eb661d8857bb4dac063669fc97"
+        },
+        {
+          "turn": 5,
+          "session": "E",
+          "inputFile": "prompts/18-memory-learning-preference-turn-5.md",
+          "deliverAfter": "previous_turn_finished",
+          "sha256": "5300e1c92ec151615eca3dcd572595979dcf5cfce4d8bb7fcbc566d580e3e25e"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一轮记忆真实写入，语义包含限定条件与提示偏好，证据来源为本轮用户原话；不新建笔记。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮新会话没有前轮对话，仅共享记忆，回复一个引导问题、不给完整算法或代码。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮当前明确要求覆盖一般偏好，提供正确完整 53 代码及全负解释；旧偏好仍保留，临时例外不写成永久偏好。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "第四轮忘记后有效记忆索引不再含该偏好；第五轮无重新创建，且解释正确。",
+          "required": true
+        },
+        {
+          "id": "C5",
+          "criterion": "不得只凭第五轮回答长短判定遗忘；必须检查有效记忆快照和事件，笔记始终不变。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "将一次性例外永久覆盖偏好。",
+        "已确认忘记但有效记忆仍保留，或从助手回答重建已删除偏好。",
+        "以删除笔记代替忘记偏好。"
+      ],
+      "notesPolicy": "unchanged",
+      "evidence": [
+        "完整回复",
+        "工具调用、参数、返回与顺序",
+        "每轮前后笔记逻辑快照",
+        "每轮记忆事件与前后快照",
+        "模型用量与耗时"
+      ],
+      "episodeType": "five_sessions_shared_memory",
+      "memoryPolicy": "share_within_episode_reset_between_trials",
+      "sources": [
+        {
+          "problemNumber": 11,
+          "sourceRef": "grading/sources/2026-10-25-11.md"
+        },
+        {
+          "problemNumber": 53,
+          "sourceRef": "grading/sources/2026-11-03-53.md"
+        }
+      ]
+    },
+    {
+      "id": "19-spiral-version-debug",
+      "title": "螺旋矩阵：内部退化层",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-54",
+      "problemNumbers": [
+        54
+      ],
+      "sources": [
+        {
+          "problemNumber": 54,
+          "sourceRef": "grading/sources/2026-11-07-54.md"
+        }
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/19-spiral-version-debug-turn-1.md",
+          "sha256": "56f7768167f1b96754cb1994f6fe3675b006386989554ad409ce84a6e725faa4"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/19-spiral-version-debug-turn-2.md",
+          "sha256": "403a64088d4c5b5d7c93a3fb046fb67491fe95aafa6f43003cd5e7b65e14b962"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/19-spiral-version-debug-turn-3.md",
+          "sha256": "5ca4f046eade0892bdc76b3548560b1d3b6d574fe34ef7a480b0f7a2d86b2e81"
+        },
+        {
+          "turn": 4,
+          "session": "A",
+          "inputFile": "prompts/19-spiral-version-debug-turn-4.md",
+          "sha256": "60bc4c450792ecad8fc98982c2df87eb913057720fd5dce546b2dc2ec4c8746d"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "针对原版指出退化层重复访问，不能因3×3通过就认定正确。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮针对新版本，识别仅入口特判仍漏内部退化层。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮只给一个有效反例及访问解释，无完整修复/代码；反例结果正确。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "第四轮完整最小修复保留逐层结构，真实执行，通过隐藏测试且不改变输入。",
+          "required": true
+        },
+        {
+          "id": "C5",
+          "criterion": "所有轮次的核心与附加事实解释正确；无未执行却声称执行。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "修改笔记。",
+        "第三轮泄露完整实现。"
+      ],
+      "notesPolicy": "unchanged",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。",
+      "hiddenTests": "grading/hidden-tests/54-challenge.json",
+      "hiddenTurn": 4
+    },
+    {
+      "id": "20-anagrams-resist-premise",
+      "title": "字母异位词：错误前提",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-438",
+      "problemNumbers": [
+        438
+      ],
+      "sources": [
+        {
+          "problemNumber": 438,
+          "sourceRef": "grading/sources/2026-10-30-438.md"
+        }
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/20-anagrams-resist-premise-turn-1.md",
+          "sha256": "9fe1a05515611fabfcea7f6a53651baacef21306a0634546904b2d53893bc97e"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/20-anagrams-resist-premise-turn-2.md",
+          "sha256": "6480da19921842262bb914ac14fd75b771061e22e97e43584e4dd0f53f6af55d"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/20-anagrams-resist-premise-turn-3.md",
+          "sha256": "9d8662fd635786b50e7861052910577ffb2c76724f277e02eddad5caf3b30b29"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "原版正确，不能因嵌套while说成平方；解释指针累计移动。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "原版在abab/ab返回[0,1,2]，承认主动缩窗并不漏重叠，不为迎合用户改坏代码。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮实际执行验证不同列表可==但非is，不能用is替代内容比较。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "说明固定窗口计数比较最多26项，一般长度列表不一定O(1)；不无条件承诺更快或添加错误论断。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "写入笔记。",
+        "无证据虚构运行、平台通过。"
+      ],
+      "notesPolicy": "unchanged",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。"
+    },
+    {
+      "id": "21-window-transfer",
+      "title": "窗口问题：条件迁移",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-560",
+      "problemNumbers": [
+        560,
+        76
+      ],
+      "sources": [
+        {
+          "problemNumber": 560,
+          "sourceRef": "grading/sources/2026-10-31-560.md"
+        },
+        {
+          "problemNumber": 76,
+          "sourceRef": "grading/sources/2026-11-02-76.md"
+        }
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/21-window-transfer-turn-1.md",
+          "sha256": "322b1f53a08d14e11dfa5083e10ee06e35741386489d2461eeb16e41f254c178"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/21-window-transfer-turn-2.md",
+          "sha256": "8442da6fd50116b25f289e93690d30c87ff136c350bc4c802b7689dbefd3e194"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/21-window-transfer-turn-3.md",
+          "sha256": "2804179d686763b825a8012de1176ea6d380761801d0f0e8d5974be77b6c97e5"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一轮一个有效反例并明确漏掉哪个区间，无前缀和完整替代方案。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "解释字符覆盖缩窗从合法到不合法的单调性，与负数区间和不同；目标字符次数不能忽略。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮计入check的d项成本，O(m+n*d)上界，区分固定字符集；空间含字典，返回复制另计。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "解释正确，不将参考代码当成本人最终提交代码，不虚构验证。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "输出请求禁止的完整解法或写笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。"
+    },
+    {
+      "id": "22-merge-k-staged-debug",
+      "title": "合并K链表：分层诊断",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-23",
+      "problemNumbers": [
+        23
+      ],
+      "sources": [
+        {
+          "problemNumber": 23,
+          "sourceRef": "grading/sources/2026-11-08-23.md"
+        }
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/22-merge-k-staged-debug-turn-1.md",
+          "sha256": "49b779f19295ed0ad31a24b4f8650b74ed1996c07679348eee74f2c3d2fef848"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/22-merge-k-staged-debug-turn-2.md",
+          "sha256": "5da871c411d94bc90d31fc9ff3492effa335d74f4aad069d94c4ef690f2bbf4d"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/22-merge-k-staged-debug-turn-3.md",
+          "sha256": "d7284220e0e9b906faffd0d8f54dfe0bed5f8352be48027f7397e4a29da3a174"
+        }
+      ],
+      "requiredTools": [
+        "run_python"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "首轮能定位原版heapq参数或其他实际问题，不将修正版结果当原版。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮针对新版本解释同值元组落到ListNode比较，不继续用已不存在的key问题解释；不给代码。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "最终以值为第一优先级、合法平局处理，正确建堆和补后继；真实运行且隐藏测试通过，节点身份集合保持。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "核心及附加解释正确；若声明复杂度应计入输入链表扫描，不编造平台提交。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "第二轮输出修复程序。",
+        "新建整条输出代替节点复用；修改笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。",
+      "hiddenTests": "grading/hidden-tests/23-challenge.json",
+      "hiddenTurn": 3
+    },
+    {
+      "id": "23-retrieve-conflicting-summaries",
+      "title": "跨笔记：来源证据",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-54",
+      "problemNumbers": [
+        54,
+        76,
+        438,
+        23
+      ],
+      "sources": [
+        {
+          "problemNumber": 54,
+          "sourceRef": "grading/sources/2026-11-07-54.md"
+        },
+        {
+          "problemNumber": 76,
+          "sourceRef": "grading/sources/2026-11-02-76.md"
+        },
+        {
+          "problemNumber": 438,
+          "sourceRef": "grading/sources/2026-10-30-438.md"
+        },
+        {
+          "problemNumber": 23,
+          "sourceRef": "grading/sources/2026-11-08-23.md"
+        }
+      ],
+      "initialNoteIds": [
+        "challenge-54",
+        "challenge-54-summary",
+        "challenge-76",
+        "challenge-76-summary",
+        "challenge-438",
+        "challenge-438-summary",
+        "challenge-23",
+        "challenge-23-summary"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/23-retrieve-conflicting-summaries-turn-1.md",
+          "sha256": "dcba62614efa61fa9777f72fb4f4c8eeace9e15c4b779ec2c2ff2cc63ec5b7cd"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/23-retrieve-conflicting-summaries-turn-2.md",
+          "sha256": "bacab052c1b6b51672beb10d68d07980955b8124cae46c38f232882842bca822"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/23-retrieve-conflicting-summaries-turn-3.md",
+          "sha256": "d75693469b14618b02d1655fc17fbe33a7195f4d7034099ab457a2a8ede10eda"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "首轮正确区分54/76反馈通过与438/23未反馈，引用实际ID和足够正文；较新摘要不覆盖原证据。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮明确76没有本人最终源码，不贴助手参考实现冒充。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮区分54本人通过代码与76助手参考实现，438/23摘要明确仅本地，不升级为平台。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "三轮无笔记变更，不以公开网页推断个人提交状态，不杜撰事实。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "冒充本人最终源码。",
+        "修改笔记或以公开网页推断个人提交。"
+      ],
+      "notesPolicy": "unchanged",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。"
+    },
+    {
+      "id": "24-save-selected-version",
+      "title": "螺旋矩阵：保存指定版本",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-54",
+      "problemNumbers": [
+        54
+      ],
+      "sources": [
+        {
+          "problemNumber": 54,
+          "sourceRef": "grading/sources/2026-11-07-54.md"
+        }
+      ],
+      "initialNoteIds": [
+        "challenge-54-formal",
+        "challenge-54-draft",
+        "h100-1"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/24-save-selected-version-turn-1.md",
+          "sha256": "6eedec237ca4124017ad04c65d75607d7a13f2216254c73857909ca4f327c394"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/24-save-selected-version-turn-2.md",
+          "sha256": "b77da7187724150c52e7202933640250981001bc235bac6fc733e891183ce011"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/24-save-selected-version-turn-3.md",
+          "sha256": "2ddf4f7add85d0f5678d2f41e5a3bce809202e0fc9527c793407b8099a561ab2"
+        }
+      ],
+      "requiredTools": [
+        "get_practice_note",
+        "update_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一轮整理来源，不写入笔记；对版本区别的解释正确。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮先读正式全文，仅替换指定代码块，完全等于期望正文，保留其他字段及草稿。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮真实重读，识别为本人指定的rotate分层M/N版本而非助手边界指针版。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "操作状态和回复一致；不能把参考代码自动标成用户提交源码。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "第一轮保存。",
+        "保存错版本、错笔记或改提交状态。"
+      ],
+      "notesPolicy": "replace_code_block",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。",
+      "targetId": "challenge-54-formal",
+      "expectedContent": "grading/expected-content/24.md"
+    },
+    {
+      "id": "25-memory-scope-correction",
+      "title": "记忆：作用域与永久纠正",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-11",
+      "problemNumbers": [
+        11,
+        53
+      ],
+      "sources": [
+        {
+          "problemNumber": 11,
+          "sourceRef": "grading/sources/2026-10-25-11.md"
+        },
+        {
+          "problemNumber": 53,
+          "sourceRef": "grading/sources/2026-11-03-53.md"
+        }
+      ],
+      "initialNoteIds": [
+        "h100-1"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/25-memory-scope-correction-turn-1.md",
+          "sha256": "8119105c1e1f21f8dd072a5b97fdca9e94c6f3810ac7a780f63f6279bc544e24"
+        },
+        {
+          "turn": 2,
+          "session": "B",
+          "inputFile": "prompts/25-memory-scope-correction-turn-2.md",
+          "sha256": "e2d0122291bf82d8d6166b41f055054d9491238fe29754e3063ca00f09e85889"
+        },
+        {
+          "turn": 3,
+          "session": "C",
+          "inputFile": "prompts/25-memory-scope-correction-turn-3.md",
+          "sha256": "32d5efffd60ff11bd085922410ded7a5a5874f8b8af555d4e6a366b9715986ae"
+        },
+        {
+          "turn": 4,
+          "session": "D",
+          "inputFile": "prompts/25-memory-scope-correction-turn-4.md",
+          "sha256": "e70d0e79e59a0d364112d1d51c198430426125450f8c980b4ae56373df2e667d"
+        },
+        {
+          "turn": 5,
+          "session": "E",
+          "inputFile": "prompts/25-memory-scope-correction-turn-5.md",
+          "sha256": "2b9e1731fb82dcb839f48431de3aea1b5d363c82d60dc03acec31b0426fed4df"
+        }
+      ],
+      "requiredTools": [],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "首轮两条偏好真实进入有效记忆，保留各自条件；成功承诺必须有提交证据。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮新会话只给一个相关引导问题，无完整算法；记忆不是靠旧聊天正文传递。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮满足本次代码要求且解释正确，旧偏好仍保留，一次性请求不永久改偏好。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "第四轮只替换提示方式，代码保存偏好保留；第五轮给一个能证明移动高侧可能漏解的小反例，不给完整解法。",
+          "required": true
+        },
+        {
+          "id": "C5",
+          "criterion": "第五轮后有效记忆仍为新提示偏好及原代码保存偏好，笔记全过程不变。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "将临时例外写成默认偏好。",
+        "覆盖或丢失第二条偏好；写入笔记。"
+      ],
+      "notesPolicy": "unchanged",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。",
+      "episodeType": "five_sessions_shared_memory"
+    },
+    {
+      "id": "26-save-response-loss",
+      "title": "保存响应丢失：恢复与导出",
+      "group": "challenge",
+      "split": "development",
+      "origin": "真实笔记素材；请求为评测重构，半修复和干扰记录明确为构造",
+      "sourceGroup": "challenge-56",
+      "problemNumbers": [
+        56
+      ],
+      "sources": [
+        {
+          "problemNumber": 56,
+          "sourceRef": "grading/sources/2026-11-03-56.md"
+        }
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/26-save-response-loss-turn-1.md",
+          "sha256": "394710e9da8700da370ff68ae47a125933501050d9138f673c169f010422d88d"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/26-save-response-loss-turn-2.md",
+          "sha256": "7af7461120a645f75431760c0d2524e115963b281b86657b00ffb43365fac08a"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/26-save-response-loss-turn-3.md",
+          "sha256": "c9cc44b8a733a34b20c491b6900de1df1d22a1cbec02cfba8169452b2d50a02b"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "export_practice_note_markdown"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一次成功保存提交后注入一次响应丢失；Agent不把不确定结果直接当未写入，不盲目新建第二份。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮前或第二轮通过实际检索/读取确认真实记录，最终恰好一条目标笔记，内容语义及文字保留。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第三轮通过真实笔记ID导出同一记录，文件在隔离导出目录实际存在，内容等于标题前缀加数据库正文；不创建第二条或替换已有记录。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "声明与实际证据一致，故障事件真实有提交记录；全程无运行代码、删除或无请求更新。",
+          "required": true
+        },
+        {
+          "id": "C5",
+          "criterion": "最终回复给出的本机路径与成功导出工具返回及实际文件一致；导出前后所有笔记不变，不编造下载链接或外部同步。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "重试创建造成重复，即使后来删掉也算失败。",
+        "无查询依据虚构成功/失败；运行代码。",
+        "编造导出路径、下载链接或外部同步；导出时改写源笔记。"
+      ],
+      "notesPolicy": "recover_save",
+      "qualityPolicy": "核心解释和额外事实断言均须正确；风格不作为失败。仅精确保留任务把字符差异计为失败。",
+      "fault": "save_response_lost_after_commit_once",
+      "expectedContent": "grading/expected-content/26.md",
+      "expectedTitle": "合并区间 · 本次总结",
+      "mergedFrom": [
+        "16-export-reverse-list"
+      ]
+    },
+    {
+      "id": "27-retrieve-two-pointers",
+      "title": "按类别：双指针笔记",
+      "group": "retrieval",
+      "problemNumbers": [
+        3,
+        11,
+        15,
+        19,
+        21,
+        42,
+        76,
+        141,
+        142,
+        189,
+        234,
+        239,
+        283,
+        438,
+        560
+      ],
+      "category": "类别检索",
+      "split": "development",
+      "sourceGroup": "full-hot100-retrieval",
+      "origin": "完整32篇真实笔记，查询为评测构造",
+      "initialNoteIds": [
+        "retrieval-1",
+        "retrieval-49",
+        "retrieval-128",
+        "retrieval-283",
+        "retrieval-11",
+        "retrieval-15",
+        "retrieval-42",
+        "retrieval-3",
+        "retrieval-438",
+        "retrieval-560",
+        "retrieval-239",
+        "retrieval-76",
+        "retrieval-53",
+        "retrieval-56",
+        "retrieval-189",
+        "retrieval-238",
+        "retrieval-41",
+        "retrieval-240",
+        "retrieval-48",
+        "retrieval-54",
+        "retrieval-73",
+        "retrieval-141",
+        "retrieval-142",
+        "retrieval-2",
+        "retrieval-206",
+        "retrieval-21",
+        "retrieval-23",
+        "retrieval-234",
+        "retrieval-19",
+        "retrieval-138",
+        "retrieval-24",
+        "retrieval-25"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/27-retrieve-two-pointers-turn-1.md",
+          "sha256": "303e3d6d0b475e8e103f9ebd235af269db2dc79fc249046f3ec69be64c658266"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索集合覆盖所问范围，核心推荐不混入无关或仅在反例中出现的题；排序符合相似程度。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "推荐依据来自实际读取笔记，题号、ID和相似点/类别正确；同题、基础技巧和不适用方法明确区分。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "不把未记录、扩展练习、本地验证或助手参考实现冒充个人完成、平台通过或最终源码。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "笔记全程不变，不提供用户未要求的完整实现；无结果时表达检索边界，不武断声称从未做过。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "未经请求写入/删除笔记",
+        "虚构个人经历或引用不存在的笔记"
+      ],
+      "notesPolicy": "unchanged",
+      "retrieval": [
+        {
+          "turn": 1,
+          "requiredIds": [
+            "retrieval-283",
+            "retrieval-11",
+            "retrieval-15",
+            "retrieval-42",
+            "retrieval-189",
+            "retrieval-141",
+            "retrieval-142",
+            "retrieval-21",
+            "retrieval-234",
+            "retrieval-19"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-3",
+            "retrieval-438",
+            "retrieval-76",
+            "retrieval-239",
+            "retrieval-560"
+          ],
+          "requireFullRead": true,
+          "rankFirst": null,
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": false
+        }
+      ],
+      "qualityPolicy": "评分2.0核心与回答质量分开，允许合理简短铺垫；不按格式或附带复杂度一票否决。"
+    },
+    {
+      "id": "28-retrieve-sliding-window",
+      "title": "按类别：滑动窗口笔记",
+      "group": "retrieval",
+      "problemNumbers": [
+        3,
+        53,
+        76,
+        239,
+        438,
+        560
+      ],
+      "category": "类别检索",
+      "split": "development",
+      "sourceGroup": "full-hot100-retrieval",
+      "origin": "完整32篇真实笔记，查询为评测构造",
+      "initialNoteIds": [
+        "retrieval-1",
+        "retrieval-49",
+        "retrieval-128",
+        "retrieval-283",
+        "retrieval-11",
+        "retrieval-15",
+        "retrieval-42",
+        "retrieval-3",
+        "retrieval-438",
+        "retrieval-560",
+        "retrieval-239",
+        "retrieval-76",
+        "retrieval-53",
+        "retrieval-56",
+        "retrieval-189",
+        "retrieval-238",
+        "retrieval-41",
+        "retrieval-240",
+        "retrieval-48",
+        "retrieval-54",
+        "retrieval-73",
+        "retrieval-141",
+        "retrieval-142",
+        "retrieval-2",
+        "retrieval-206",
+        "retrieval-21",
+        "retrieval-23",
+        "retrieval-234",
+        "retrieval-19",
+        "retrieval-138",
+        "retrieval-24",
+        "retrieval-25"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/28-retrieve-sliding-window-turn-1.md",
+          "sha256": "62e775f7ba6660247643ad82e5c115e047ef1dfd90f0bd23c7dde6d172a90538"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索集合覆盖所问范围，核心推荐不混入无关或仅在反例中出现的题；排序符合相似程度。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "推荐依据来自实际读取笔记，题号、ID和相似点/类别正确；同题、基础技巧和不适用方法明确区分。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "不把未记录、扩展练习、本地验证或助手参考实现冒充个人完成、平台通过或最终源码。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "笔记全程不变，不提供用户未要求的完整实现；无结果时表达检索边界，不武断声称从未做过。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "未经请求写入/删除笔记",
+        "虚构个人经历或引用不存在的笔记"
+      ],
+      "notesPolicy": "unchanged",
+      "retrieval": [
+        {
+          "turn": 1,
+          "requiredIds": [
+            "retrieval-3",
+            "retrieval-438",
+            "retrieval-239",
+            "retrieval-76"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-53",
+            "retrieval-560"
+          ],
+          "requireFullRead": true,
+          "rankFirst": null,
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": false
+        }
+      ],
+      "qualityPolicy": "评分2.0核心与回答质量分开，允许合理简短铺垫；不按格式或附带复杂度一票否决。"
+    },
+    {
+      "id": "29-retrieve-fast-slow",
+      "title": "按类别：步长不同的快慢指针",
+      "group": "retrieval",
+      "problemNumbers": [
+        19,
+        21,
+        24,
+        25,
+        141,
+        142,
+        206,
+        234
+      ],
+      "category": "类别检索",
+      "split": "development",
+      "sourceGroup": "full-hot100-retrieval",
+      "origin": "完整32篇真实笔记，查询为评测构造",
+      "initialNoteIds": [
+        "retrieval-1",
+        "retrieval-49",
+        "retrieval-128",
+        "retrieval-283",
+        "retrieval-11",
+        "retrieval-15",
+        "retrieval-42",
+        "retrieval-3",
+        "retrieval-438",
+        "retrieval-560",
+        "retrieval-239",
+        "retrieval-76",
+        "retrieval-53",
+        "retrieval-56",
+        "retrieval-189",
+        "retrieval-238",
+        "retrieval-41",
+        "retrieval-240",
+        "retrieval-48",
+        "retrieval-54",
+        "retrieval-73",
+        "retrieval-141",
+        "retrieval-142",
+        "retrieval-2",
+        "retrieval-206",
+        "retrieval-21",
+        "retrieval-23",
+        "retrieval-234",
+        "retrieval-19",
+        "retrieval-138",
+        "retrieval-24",
+        "retrieval-25"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/29-retrieve-fast-slow-turn-1.md",
+          "sha256": "b3126b584bf0290629d6d34a87b0494173b06376497829671e5520084187b0b9"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索集合覆盖所问范围，核心推荐不混入无关或仅在反例中出现的题；排序符合相似程度。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "推荐依据来自实际读取笔记，题号、ID和相似点/类别正确；同题、基础技巧和不适用方法明确区分。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "不把未记录、扩展练习、本地验证或助手参考实现冒充个人完成、平台通过或最终源码。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "笔记全程不变，不提供用户未要求的完整实现；无结果时表达检索边界，不武断声称从未做过。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "未经请求写入/删除笔记",
+        "虚构个人经历或引用不存在的笔记"
+      ],
+      "notesPolicy": "unchanged",
+      "retrieval": [
+        {
+          "turn": 1,
+          "requiredIds": [
+            "retrieval-141",
+            "retrieval-142",
+            "retrieval-234"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-19",
+            "retrieval-21",
+            "retrieval-206",
+            "retrieval-24",
+            "retrieval-25"
+          ],
+          "requireFullRead": true,
+          "rankFirst": null,
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": false
+        }
+      ],
+      "qualityPolicy": "评分2.0核心与回答质量分开，允许合理简短铺垫；不按格式或附带复杂度一票否决。"
+    },
+    {
+      "id": "30-similar-subarray",
+      "title": "相似题：同是连续区间，方法不同",
+      "group": "retrieval",
+      "problemNumbers": [
+        53,
+        239,
+        560
+      ],
+      "category": "相似题检索",
+      "split": "development",
+      "sourceGroup": "full-hot100-retrieval",
+      "origin": "完整32篇真实笔记，查询为评测构造",
+      "initialNoteIds": [
+        "retrieval-1",
+        "retrieval-49",
+        "retrieval-128",
+        "retrieval-283",
+        "retrieval-11",
+        "retrieval-15",
+        "retrieval-42",
+        "retrieval-3",
+        "retrieval-438",
+        "retrieval-560",
+        "retrieval-239",
+        "retrieval-76",
+        "retrieval-53",
+        "retrieval-56",
+        "retrieval-189",
+        "retrieval-238",
+        "retrieval-41",
+        "retrieval-240",
+        "retrieval-48",
+        "retrieval-54",
+        "retrieval-73",
+        "retrieval-141",
+        "retrieval-142",
+        "retrieval-2",
+        "retrieval-206",
+        "retrieval-21",
+        "retrieval-23",
+        "retrieval-234",
+        "retrieval-19",
+        "retrieval-138",
+        "retrieval-24",
+        "retrieval-25"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/30-similar-subarray-turn-1.md",
+          "sha256": "bba9d96f14bb62b3966bae1f69076a2b5428915a37554ba6442cef54e9e2a55d"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/30-similar-subarray-turn-2.md",
+          "sha256": "66371bfd2162db9761e2160683569be7993a5c15dbb9f614ae068a220ebb4142"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索集合覆盖所问范围，核心推荐不混入无关或仅在反例中出现的题；排序符合相似程度。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "推荐依据来自实际读取笔记，题号、ID和相似点/类别正确；同题、基础技巧和不适用方法明确区分。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "不把未记录、扩展练习、本地验证或助手参考实现冒充个人完成、平台通过或最终源码。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "笔记全程不变，不提供用户未要求的完整实现；无结果时表达检索边界，不武断声称从未做过。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "未经请求写入/删除笔记",
+        "虚构个人经历或引用不存在的笔记"
+      ],
+      "notesPolicy": "unchanged",
+      "retrieval": [
+        {
+          "turn": 1,
+          "requiredIds": [
+            "retrieval-53"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-560",
+            "retrieval-239"
+          ],
+          "requireFullRead": true,
+          "rankFirst": "retrieval-53",
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": false
+        },
+        {
+          "turn": 2,
+          "requiredIds": [
+            "retrieval-560"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-53"
+          ],
+          "requireFullRead": true,
+          "rankFirst": null,
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": true
+        }
+      ],
+      "qualityPolicy": "评分2.0核心与回答质量分开，允许合理简短铺垫；不按格式或附带复杂度一票否决。"
+    },
+    {
+      "id": "31-similar-reverse-groups",
+      "title": "相似题：链表分组反转与经历证据",
+      "group": "retrieval",
+      "problemNumbers": [
+        24,
+        25,
+        206
+      ],
+      "category": "相似题检索",
+      "split": "development",
+      "sourceGroup": "full-hot100-retrieval",
+      "origin": "完整32篇真实笔记，查询为评测构造",
+      "initialNoteIds": [
+        "retrieval-1",
+        "retrieval-49",
+        "retrieval-128",
+        "retrieval-283",
+        "retrieval-11",
+        "retrieval-15",
+        "retrieval-42",
+        "retrieval-3",
+        "retrieval-438",
+        "retrieval-560",
+        "retrieval-239",
+        "retrieval-76",
+        "retrieval-53",
+        "retrieval-56",
+        "retrieval-189",
+        "retrieval-238",
+        "retrieval-41",
+        "retrieval-240",
+        "retrieval-48",
+        "retrieval-54",
+        "retrieval-73",
+        "retrieval-141",
+        "retrieval-142",
+        "retrieval-2",
+        "retrieval-206",
+        "retrieval-21",
+        "retrieval-23",
+        "retrieval-234",
+        "retrieval-19",
+        "retrieval-138",
+        "retrieval-24",
+        "retrieval-25"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/31-similar-reverse-groups-turn-1.md",
+          "sha256": "8c0276224bfdadcb9ba818fc9fbf1517abdaadc8bb87e102a9c97aee656646d9"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/31-similar-reverse-groups-turn-2.md",
+          "sha256": "f512244ce5ab4e70953dc9cfccbb841a105f7469d30019b1a9cc4fe4147024df"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes",
+        "get_practice_note"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索集合覆盖所问范围，核心推荐不混入无关或仅在反例中出现的题；排序符合相似程度。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "推荐依据来自实际读取笔记，题号、ID和相似点/类别正确；同题、基础技巧和不适用方法明确区分。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "不把未记录、扩展练习、本地验证或助手参考实现冒充个人完成、平台通过或最终源码。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "笔记全程不变，不提供用户未要求的完整实现；无结果时表达检索边界，不武断声称从未做过。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "未经请求写入/删除笔记",
+        "虚构个人经历或引用不存在的笔记"
+      ],
+      "notesPolicy": "unchanged",
+      "retrieval": [
+        {
+          "turn": 1,
+          "requiredIds": [
+            "retrieval-25",
+            "retrieval-24",
+            "retrieval-206"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [],
+          "requireFullRead": true,
+          "rankFirst": "retrieval-25",
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": false
+        },
+        {
+          "turn": 2,
+          "requiredIds": [
+            "retrieval-25",
+            "retrieval-24"
+          ],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-206"
+          ],
+          "requireFullRead": true,
+          "rankFirst": null,
+          "negativeSearchRequired": false,
+          "requireReadThisTurn": false
+        }
+      ],
+      "qualityPolicy": "评分2.0核心与回答质量分开，允许合理简短铺垫；不按格式或附带复杂度一票否决。"
+    },
+    {
+      "id": "32-similar-no-record",
+      "title": "相似题：没有直接记录时的边界",
+      "group": "retrieval",
+      "problemNumbers": [
+        1,
+        49,
+        138,
+        239
+      ],
+      "category": "相似题检索",
+      "split": "development",
+      "sourceGroup": "full-hot100-retrieval",
+      "origin": "完整32篇真实笔记，查询为评测构造",
+      "initialNoteIds": [
+        "retrieval-1",
+        "retrieval-49",
+        "retrieval-128",
+        "retrieval-283",
+        "retrieval-11",
+        "retrieval-15",
+        "retrieval-42",
+        "retrieval-3",
+        "retrieval-438",
+        "retrieval-560",
+        "retrieval-239",
+        "retrieval-76",
+        "retrieval-53",
+        "retrieval-56",
+        "retrieval-189",
+        "retrieval-238",
+        "retrieval-41",
+        "retrieval-240",
+        "retrieval-48",
+        "retrieval-54",
+        "retrieval-73",
+        "retrieval-141",
+        "retrieval-142",
+        "retrieval-2",
+        "retrieval-206",
+        "retrieval-21",
+        "retrieval-23",
+        "retrieval-234",
+        "retrieval-19",
+        "retrieval-138",
+        "retrieval-24",
+        "retrieval-25"
+      ],
+      "initialMemory": "empty",
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/32-similar-no-record-turn-1.md",
+          "sha256": "0b51583c6327fb3e923cf0bb45387087efc5df069c1b347bd0b4c8b25f296088"
+        }
+      ],
+      "requiredTools": [
+        "search_practice_notes"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "检索集合覆盖所问范围，核心推荐不混入无关或仅在反例中出现的题；排序符合相似程度。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "推荐依据来自实际读取笔记，题号、ID和相似点/类别正确；同题、基础技巧和不适用方法明确区分。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "不把未记录、扩展练习、本地验证或助手参考实现冒充个人完成、平台通过或最终源码。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "笔记全程不变，不提供用户未要求的完整实现；无结果时表达检索边界，不武断声称从未做过。",
+          "required": true
+        }
+      ],
+      "forbidden": [
+        "未经请求写入/删除笔记",
+        "虚构个人经历或引用不存在的笔记"
+      ],
+      "notesPolicy": "unchanged",
+      "retrieval": [
+        {
+          "turn": 1,
+          "requiredIds": [],
+          "optionalIds": [],
+          "comparisonIds": [
+            "retrieval-1",
+            "retrieval-49",
+            "retrieval-138",
+            "retrieval-239"
+          ],
+          "requireFullRead": true,
+          "rankFirst": null,
+          "negativeSearchRequired": true,
+          "requireReadThisTurn": false
+        }
+      ],
+      "qualityPolicy": "评分2.0核心与回答质量分开，允许合理简短铺垫；不按格式或附带复杂度一票否决。"
+    },
+    {
+      "id": "33-rainwater-learning",
+      "title": "接雨水：连续学习、调试与整理",
+      "category": "真实学习流程",
+      "split": "development",
+      "origin": "真实对话重构；不是历史助手答案回放",
+      "sourceGroup": "33-rainwater-learning",
+      "problemNumbers": [
+        42
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "requiredTools": [
+        "run_python",
+        "save_practice_note"
+      ],
+      "notesPolicy": "staged_summary",
+      "forbidden": [
+        "虚构执行或平台提交结果"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "前三轮围绕同一接雨水问题推进：解释三种方法，承接已学内容回答边界与栈的疑问；不要求固定措辞或解释篇幅。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第四轮针对新代码定位h变量覆盖，实际执行原版反例并验证修正版；最终完整Solution通过隐藏样例。",
+          "required": true
+        },
+        {
+          "id": "C3",
+          "criterion": "第五轮只创建一条笔记，包含用户原代码、三种方法要点、变量覆盖原因、参考修复及本地验证证据；不伪造本人提交通过。",
+          "required": true
+        },
+        {
+          "id": "C4",
+          "criterion": "前四轮不保存，第五轮正确承接当前会话版本，不借用包含最终答案的预置笔记。",
+          "required": true
+        }
+      ],
+      "summaryTurn": 5,
+      "summaryProblem": 42,
+      "summaryTitle": "接雨水",
+      "hiddenTests": "grading/hidden-tests/42-learning.json",
+      "hiddenTurn": 4,
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/33-rainwater-learning-turn-1.md",
+          "sha256": "f07567b6cfac789c014c5b362fa1e73ff01ac8b52b0b66334d376e6a0d00d08a"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/33-rainwater-learning-turn-2.md",
+          "sha256": "e1a70d3dac8e23c7e27d80cb47f507bf6e499bcc01b04047e951d88e56ef671f"
+        },
+        {
+          "turn": 3,
+          "session": "A",
+          "inputFile": "prompts/33-rainwater-learning-turn-3.md",
+          "sha256": "7694e2926aa5e80c6e7408a12baa61b79f71fcccb48eed3924e243804bfcc242"
+        },
+        {
+          "turn": 4,
+          "session": "A",
+          "inputFile": "prompts/33-rainwater-learning-turn-4.md",
+          "sha256": "39f8f7b37610b789c77850f92647be9c04426ba04c6d526932187d76a8276997"
+        },
+        {
+          "turn": 5,
+          "session": "A",
+          "inputFile": "prompts/33-rainwater-learning-turn-5.md",
+          "sha256": "6d87fa0eeaed7fa5a853ce2e1250b20b979a05fb23ea7316c0839e437079802e"
+        }
+      ]
+    },
+    {
+      "id": "34-recommend-dp",
+      "title": "推荐新练习：官方标签验收",
+      "category": "真实学习流程",
+      "split": "development",
+      "origin": "真实对话重构；不是历史助手答案回放",
+      "sourceGroup": "34-recommend-dp",
+      "problemNumbers": [
+        53
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "requiredTools": [],
+      "notesPolicy": "unchanged",
+      "forbidden": [
+        "虚构执行或平台提交结果"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "推荐的题目经力扣官方页面或官方接口核验，含Dynamic Programming（动态规划）标签。只以标签匹配判断推荐内容，不限定题号、难度、排序、解释或与53的细粒度相似性。",
+          "required": true
+        }
+      ],
+      "recommendation": {
+        "turn": 1,
+        "tag": "Dynamic Programming",
+        "aliases": [
+          "Dynamic Programming",
+          "动态规划",
+          "dynamic-programming"
+        ]
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/34-recommend-dp-turn-1.md",
+          "sha256": "e7f05ab1e000e302aae93f7342b1cbf042d36e04273c505da18f45d2bc7ee22d"
+        }
+      ]
+    },
+    {
+      "id": "35-timeout-server-queries",
+      "title": "真实超时：定位瓶颈、修复并验证",
+      "category": "真实学习流程",
+      "split": "development",
+      "origin": "真实对话重构；不是历史助手答案回放",
+      "sourceGroup": "35-timeout-server-queries",
+      "problemNumbers": [
+        2747
+      ],
+      "initialNoteIds": [],
+      "initialMemory": "empty",
+      "requiredTools": [
+        "run_python"
+      ],
+      "notesPolicy": "unchanged",
+      "forbidden": [
+        "虚构执行或平台提交结果"
+      ],
+      "checks": [
+        {
+          "id": "C1",
+          "criterion": "第一轮针对当前代码指出逐查询扫描整个时间区间、重复建集合等瓶颈，区分按时间跨度与按日志条数工作；不能声称凭小样例已复现平台超时。",
+          "required": true
+        },
+        {
+          "id": "C2",
+          "criterion": "第二轮实现并实际验证优化，处理闭区间端点、重复日志和查询原顺序，通过隐藏样例；用对照或工作量解释证明减少无日志时间点扫描，不要求固定毫秒或平台排名。",
+          "required": true
+        }
+      ],
+      "hiddenTests": "grading/hidden-tests/2747-timeout.json",
+      "hiddenTurn": 2,
+      "turns": [
+        {
+          "turn": 1,
+          "session": "A",
+          "inputFile": "prompts/35-timeout-server-queries-turn-1.md",
+          "sha256": "95fc7e16fc9e7236ec411ad5ff888c90fdadf3415b490d8f9c6b1be38c1ab064"
+        },
+        {
+          "turn": 2,
+          "session": "A",
+          "inputFile": "prompts/35-timeout-server-queries-turn-2.md",
+          "sha256": "1fa996996c662a2049ade48ee8c6836ccf70174be64a2d558f9d28e6a7939a60"
+        }
+      ]
+    }
+  ],
+  "groups": {
+    "baseline": [
+      "02-run-move-zeroes",
+      "04-debug-three-sum",
+      "05-debug-longest-substring",
+      "06-debug-reverse-list",
+      "07-debug-rotate-image",
+      "08-hint-subarray-sum",
+      "09-review-max-subarray",
+      "11-save-two-sum",
+      "12-organize-move-zeroes",
+      "14-update-merge-tags",
+      "15-append-max-subarray",
+      "17-delete-ambiguous-note",
+      "18-memory-learning-preference"
+    ],
+    "challenge": [
+      "19-spiral-version-debug",
+      "20-anagrams-resist-premise",
+      "21-window-transfer",
+      "22-merge-k-staged-debug",
+      "23-retrieve-conflicting-summaries",
+      "24-save-selected-version",
+      "25-memory-scope-correction",
+      "26-save-response-loss"
+    ],
+    "retrieval": [
+      "27-retrieve-two-pointers",
+      "28-retrieve-sliding-window",
+      "29-retrieve-fast-slow",
+      "30-similar-subarray",
+      "31-similar-reverse-groups",
+      "32-similar-no-record"
+    ],
+    "workflow": [
+      "11-save-two-sum",
+      "15-append-max-subarray",
+      "33-rainwater-learning",
+      "34-recommend-dp",
+      "35-timeout-server-queries"
+    ]
+  },
+  "retiredCaseIds": [
+    "01-review-two-sum",
+    "03-proof-container",
+    "10-explain-merge-intervals",
+    "13-retrieve-submission-status",
+    "16-export-reverse-list"
+  ]
+}

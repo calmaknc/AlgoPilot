@@ -1,0 +1,29 @@
+{
+  "scope": "参考数据核对，非 agent 运行",
+  "seed": 20261111,
+  "exhaustiveOrSampledChecks": {
+    "15_exhaustive_sorted_arrays_length_3_to_7_values_minus2_to2": 771,
+    "3_exhaustive_strings_length_0_to_5_alphabet_ab_space_1": 1365,
+    "206_exhaustive_lists_length_0_to_6_values_0_to2": 1093,
+    "283_exhaustive_arrays_length_1_to_6_values_minus1_0_1": 1092,
+    "48_seeded_random_square_matrices_sizes_1_to_6": 120
+  },
+  "hiddenTestCounts": {
+    "15": 48,
+    "3": 51,
+    "206": 47,
+    "48": 42,
+    "283": 44
+  },
+  "originalFailuresReproduced": [
+    15,
+    3,
+    206,
+    48
+  ],
+  "partialFixFailureReproduced": "15: 仅替换 break 为两侧移动仍重复输出",
+  "allReferenceChecksPassed": true,
+  "sourceSnapshotsMatch": true,
+  "runtime": "local Python standard library, no model / no Docker / no platform submission",
+  "all232HiddenCasesCheckedAgainstReference": true
+}

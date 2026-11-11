@@ -1,0 +1,24 @@
+{
+  "version": "1.1.1",
+  "baselineCasesUnchanged": true,
+  "challengeCases": 8,
+  "challengeTurns": 27,
+  "referenceHiddenTestsPassed": 115,
+  "knownPartialFixResults": {
+    "54": "49/64; internal degenerate layers rejected",
+    "23": "14/51; equal node priorities rejected"
+  },
+  "faultTest": "Real temporary SQLite commit survives lost response; injection only once; failed saves do not consume injection",
+  "dryRun": "27 turns, no model API, protected roots unchanged",
+  "agentResults": {
+    "runId": "2026-11-11T08-33-51.529Z",
+    "benchmarkVersion": "1.1.0",
+    "completedTurns": 27,
+    "passed": 4,
+    "failed": 3,
+    "needsReview": 1,
+    "hiddenPassed": 115,
+    "protectedDataUnchanged": true
+  },
+  "postRevisionDryRun": "2026-11-11T08-45-47.714Z; 1.1.1; 27 turns; no API; protected data unchanged"
+}

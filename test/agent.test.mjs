@@ -116,8 +116,40 @@ test('普通回答、多个工具、参数修正、轮数限制及流错误', as
 
     requests = 0;
     handler = () => response([call(String(++requests), '{"timezone":"UTC"}')]);
-    await assert.rejects(requestModel(messages), /5 次模型请求上限/);
-    assert.equal(requests, 5);
+    let budgetToolCalls = 0;
+    await assert.rejects(requestModel(messages, undefined, () => budgetToolCalls++), /最后回复轮/);
+    assert.equal(budgetToolCalls, 11);
+    assert.equal(requests, 12);
+
+    requests = 0;
+    let executed = 0;
+    handler = body => {
+        requests++;
+        if (requests === 12) {
+            assert.equal(body.tool_choice, 'none');
+            assert.match(body.instructions, /最后一次回复机会/);
+            return response([], '已完成查询，现有证据如下');
+        }
+        assert.equal(body.tool_choice, 'auto');
+        return response([call(String(requests), '{}', 'test_tool')]);
+    };
+    assert.equal(await requestModel(messages, undefined, undefined, undefined, undefined, {
+        toolDefinitions: [], executeTool: async () => { executed++; return '{"ok":true}'; }
+    }), '已完成查询，现有证据如下');
+    assert.equal(executed, 11);
+    assert.equal(requests, 12);
+
+    requests = 0;
+    executed = 0;
+    handler = body => {
+        requests++;
+        if (body.tool_choice === 'none') return response([], '');
+        return response([call(String(requests), '{}', 'test_tool')], '正在查询');
+    };
+    await assert.rejects(requestModel(messages, undefined, undefined, undefined, undefined, {
+        toolDefinitions: [], executeTool: async () => { executed++; return '{"ok":true}'; }
+    }), /没有返回有效的文本回复/);
+    assert.equal(executed, 11);
 
     for (const [status, error] of [
         ['incomplete', /max_output_tokens/],

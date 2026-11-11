@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "id": "34-recommend-dp",
+      "completeSelection": false,
+      "items": [
+        {
+          "problem": null,
+          "answerExcerpt": "最终回答中准确定位该推荐的原文",
+          "identityVerified": false,
+          "sourceUrl": "",
+          "retrievedAt": "",
+          "tags": [],
+          "officialEvidence": "保存官方页面标签片段或官方接口原始topicTags，并核对与推荐题一致"
+        }
+      ]
+    }
+  ]
+}

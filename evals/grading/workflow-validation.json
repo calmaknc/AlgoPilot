@@ -1,0 +1,32 @@
+{
+  "validation": "reference and regression tests, not agent scores",
+  "results": [
+    {
+      "file": "42-learning.json",
+      "passed": 74,
+      "total": 74,
+      "oracle": "independent direct definition; stack/offline-window implementation checked"
+    },
+    {
+      "file": "2747-timeout.json",
+      "passed": 72,
+      "total": 72,
+      "oracle": "independent direct definition; stack/offline-window implementation checked"
+    },
+    {
+      "originalTrapFailures": 33,
+      "example": {
+        "id": "42-2",
+        "input": [
+          4,
+          2,
+          0,
+          3,
+          2,
+          5
+        ],
+        "expected": 9
+      }
+    }
+  ]
+}

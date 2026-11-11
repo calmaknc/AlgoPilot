@@ -1,0 +1,264 @@
+{
+  "problemNumber": 3,
+  "visibility": "grader_only",
+  "seed": 20261111,
+  "comparison": "exact_integer",
+  "method": "枚举所有子串，逐一判断字符是否唯一。",
+  "tests": [
+    {
+      "id": "3-hidden-001",
+      "input": "",
+      "expected": 0
+    },
+    {
+      "id": "3-hidden-002",
+      "input": "a",
+      "expected": 1
+    },
+    {
+      "id": "3-hidden-003",
+      "input": " ",
+      "expected": 1
+    },
+    {
+      "id": "3-hidden-004",
+      "input": "abba",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-005",
+      "input": "pwwkew",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-006",
+      "input": "dvdf",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-007",
+      "input": "A1! A",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-008",
+      "input": "a!a!",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-009",
+      "input": "012340",
+      "expected": 5
+    },
+    {
+      "id": "3-hidden-010",
+      "input": " 1 1",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-011",
+      "input": "ab111",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-012",
+      "input": "a1 a ",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-013",
+      "input": "ab a1",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-014",
+      "input": "aaabb",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-015",
+      "input": "11aab",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-016",
+      "input": "a b1b",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-017",
+      "input": "b 1a ",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-018",
+      "input": "aa1 a",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-019",
+      "input": "1ab1a",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-020",
+      "input": "1b a ",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-021",
+      "input": " 1b  ",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-022",
+      "input": " 1  ",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-023",
+      "input": " aa 1",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-024",
+      "input": "ab1a1",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-025",
+      "input": "b1 1a",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-026",
+      "input": " b a1",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-027",
+      "input": "a1b b",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-028",
+      "input": "a1b a",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-029",
+      "input": "11  1",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-030",
+      "input": "a1  a",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-031",
+      "input": "1 ba",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-032",
+      "input": "bb1bb",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-033",
+      "input": "bba1",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-034",
+      "input": "b1a 1",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-035",
+      "input": "a 1b ",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-036",
+      "input": " a 1a",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-037",
+      "input": " 1abb",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-038",
+      "input": " bba",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-039",
+      "input": " bb  ",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-040",
+      "input": "b a 1",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-041",
+      "input": "bba 1",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-042",
+      "input": "a ab",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-043",
+      "input": "1 1b",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-044",
+      "input": "1b 1b",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-045",
+      "input": "b1 a1",
+      "expected": 4
+    },
+    {
+      "id": "3-hidden-046",
+      "input": " b1bb",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-047",
+      "input": " 11aa",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-048",
+      "input": "1b",
+      "expected": 2
+    },
+    {
+      "id": "3-hidden-049",
+      "input": "1b bb",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-050",
+      "input": "1a1 ",
+      "expected": 3
+    },
+    {
+      "id": "3-hidden-051",
+      "input": "1abbb",
+      "expected": 3
+    }
+  ]
+}

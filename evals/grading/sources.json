@@ -1,0 +1,305 @@
+{
+  "sourceRoot": "/home/nijunjie/文档/leetcode",
+  "inventoryCount": 32,
+  "selectedCount": 32,
+  "sources": [
+    {
+      "problemNumber": 1,
+      "title": "两数之和",
+      "path": "hot 100/2026-10-22-1.md",
+      "snapshot": "grading/sources/2026-10-22-1.md",
+      "sha256": "91f1c42e48601a3d00f1f23d7095a52d8c057d3d456721fa495ce93781261b06",
+      "codeHeading": "## 我的代码",
+      "codeStartLine": 25,
+      "codeSha256": "8c883a8d11c8de748c6b4568257315795c91b9acaa9e84ae3ff7c30c186d3399",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 283,
+      "title": "移动零",
+      "path": "hot 100/2026-10-24-283.md",
+      "snapshot": "grading/sources/2026-10-24-283.md",
+      "sha256": "f088a44c1560980694862ab9a55d4a021e653f1be93cb232a9294c1375f30a70",
+      "codeHeading": "## 我的代码",
+      "codeStartLine": 19,
+      "codeSha256": "e2e22fa989e17d4404b07bde69d77852b5442be03224df7356b4cc0b66c460d0",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 11,
+      "title": "盛最多水的容器",
+      "path": "hot 100/2026-10-25-11.md",
+      "snapshot": "grading/sources/2026-10-25-11.md",
+      "sha256": "3cbccc84dcef772bbbd03d8f105807197cc9a944fee885cab1a7b91016e533e3",
+      "codeHeading": "## 我的代码",
+      "codeStartLine": 42,
+      "codeSha256": "9f280c268e8f89d6c8d24d7f139bac0e7ee8d3f3fd919211c1ff961c5082c3c5",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 15,
+      "title": "三数之和",
+      "path": "hot 100/2026-10-26-15.md",
+      "snapshot": "grading/sources/2026-10-26-15.md",
+      "sha256": "1c20d92b93fb6fe1d873f2d343ea4eb253cd1ef6e0ed74083862aed792c49f09",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 17,
+      "codeSha256": "e952c99c5ccd14394641d837c951c1fd44449ed6976d8cfdc5cd1f163b5d7ba8",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 3,
+      "title": "无重复字符的最长子串",
+      "path": "hot 100/2026-10-30-3.md",
+      "snapshot": "grading/sources/2026-10-30-3.md",
+      "sha256": "1cfedc214abb0598d6186e1b9235f3c059c8c2e33dff87d82aa46fdab2daadb2",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 13,
+      "codeSha256": "513512d407353c834757f25af71086e058d17462cc414af539813a98add88261",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 560,
+      "title": "和为 K 的子数组",
+      "path": "hot 100/2026-10-31-560.md",
+      "snapshot": "grading/sources/2026-10-31-560.md",
+      "sha256": "9d7c2b94225dc73aa5b14c70f25e8ffe539c2a4a5b85405a99cb9cd284bb2484",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 38,
+      "codeSha256": "924129b6368b1901fb7dc8268cb010cfed95d64b143977f007731fe6a6c16257",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 53,
+      "title": "最大子数组和",
+      "path": "hot 100/2026-11-03-53.md",
+      "snapshot": "grading/sources/2026-11-03-53.md",
+      "sha256": "9864d7b989d40479068b2aa3bad22c33613913e368c233d4ab45d2ccc0c14e6a",
+      "codeHeading": "## 我的代码",
+      "codeStartLine": 13,
+      "codeSha256": "03ba8afbf61ec6b1580d9a8b3938cb0f1ab1b22ff880ecdb287e7e2712cbdda4",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 56,
+      "title": "合并区间",
+      "path": "hot 100/2026-11-03-56.md",
+      "snapshot": "grading/sources/2026-11-03-56.md",
+      "sha256": "67b9d8c24f1bac8eaa34c78f7380d030e621466a5c9c8ab3e38599026aa17b3f",
+      "codeHeading": "## 思路与易错点",
+      "codeStartLine": 17,
+      "codeSha256": "641552f8ed701aa750a8717bf6e104311b9dd1f440d17594beac85376c707cb3",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 206,
+      "title": "反转链表",
+      "path": "hot 100/2026-11-08-206.md",
+      "snapshot": "grading/sources/2026-11-08-206.md",
+      "sha256": "93bb705e3bf7724b3d77442b171829f48be22ad2b13f33997f937705dd9513cb",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 13,
+      "codeSha256": "39104deacffa067ad28183dacf1ec4dd473039412e16dc24341663abd790d90e",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 48,
+      "title": "旋转图像",
+      "path": "hot 100/2026-11-07-48.md",
+      "snapshot": "grading/sources/2026-11-07-48.md",
+      "sha256": "ed4eb4c939c383c174b3bb108299a3152c6814fd43fd509eca1d0d179000133c",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 13,
+      "codeSha256": "32f69bc7d1a8627eab7b9a8553c6a17588ab0f8ac32a892e7ff3df58b1dcc778",
+      "origin": "用户笔记原始代码块；不含修正版"
+    },
+    {
+      "problemNumber": 54,
+      "title": "螺旋矩阵",
+      "path": "hot 100/2026-11-07-54.md",
+      "snapshot": "grading/sources/2026-11-07-54.md",
+      "sha256": "749ffc6c5e095497f491d131dcfeaa9749e65ce9d8e9a26c3308f1633483be68",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 19,
+      "codeSha256": "9de87543eb765f5a24db379a4a0a30c71730fad990ec51a097c44ddf84a5ed58",
+      "origin": "原笔记摘录"
+    },
+    {
+      "problemNumber": 438,
+      "title": "找到字符串中所有字母异位词",
+      "path": "hot 100/2026-10-30-438.md",
+      "snapshot": "grading/sources/2026-10-30-438.md",
+      "sha256": "19b9cf24a7cb2df1436ea3b7a085345b5144d2517be202a5a6bf31304f15549b",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 13,
+      "codeSha256": "ea8e4b34e6976556b782e6c0d626070b6d32b6f7f2b11edbf9172fee4a94650a",
+      "origin": "原笔记摘录"
+    },
+    {
+      "problemNumber": 76,
+      "title": "最小覆盖子串",
+      "path": "hot 100/2026-11-02-76.md",
+      "snapshot": "grading/sources/2026-11-02-76.md",
+      "sha256": "ba93e5ce5a40cd58f8966c4112c0ae2e91325922784523e1089a6e043310aa26",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 13,
+      "codeSha256": "4fd668cc2fbcafe9113ca9d93ebcf4db7a895e46082ca4edbc6c2c9979296ec3",
+      "origin": "原笔记摘录"
+    },
+    {
+      "problemNumber": 23,
+      "title": "合并 K 个升序链表",
+      "path": "hot 100/2026-11-08-23.md",
+      "snapshot": "grading/sources/2026-11-08-23.md",
+      "sha256": "cf30734b1f4ff1804c630eda689f117149fa5e2a6fa08f7e89f0278991cd0aa0",
+      "codeHeading": "## 我的原始代码",
+      "codeStartLine": 13,
+      "codeSha256": "20feba3cdb41c7c2ae08a1b76c09ea34c09490f5ae61550a85741f4533e71166",
+      "origin": "原笔记摘录"
+    },
+    {
+      "problemNumber": 49,
+      "title": "字母异位词分组",
+      "path": "hot 100/2026-10-23-49.md",
+      "snapshot": "grading/sources/2026-10-23-49.md",
+      "sha256": "46b3c339d67e5e5cee92a98fc552bfb6322ff30a79ca435a234d8a16da43665a",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 128,
+      "title": "最长连续序列",
+      "path": "hot 100/2026-10-24-128.md",
+      "snapshot": "grading/sources/2026-10-24-128.md",
+      "sha256": "0170170949a84dd3897c768a875b0dd954d10d4397df9c668d4e487f73ed405f",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 42,
+      "title": "接雨水",
+      "path": "hot 100/2026-10-27-42.md",
+      "snapshot": "grading/sources/2026-10-27-42.md",
+      "sha256": "38a66a1386deacb869362550821c7ac728d0b7957786986a2f8a27a54c8a2b0b",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 239,
+      "title": "滑动窗口最大值",
+      "path": "hot 100/2026-11-01-239.md",
+      "snapshot": "grading/sources/2026-11-01-239.md",
+      "sha256": "e3af8e5f777928fa9f79617503f00cb1caea986329250bc6d3298ecd9f44719d",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 189,
+      "title": "轮转数组",
+      "path": "hot 100/2026-11-04-189.md",
+      "snapshot": "grading/sources/2026-11-04-189.md",
+      "sha256": "df0fd4a3e191e5ba3dddc66fe9ddcae1bb368fcd6840dad0807653e7c6aaa3da",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 238,
+      "title": "除自身以外数组的乘积",
+      "path": "hot 100/2026-11-04-238.md",
+      "snapshot": "grading/sources/2026-11-04-238.md",
+      "sha256": "40ae7f114c6d970aa80f36fa6f1fcbdcbcd7665554460468c473a2ec1531a4e7",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 41,
+      "title": "缺失的第一个正数",
+      "path": "hot 100/2026-11-05-41.md",
+      "snapshot": "grading/sources/2026-11-05-41.md",
+      "sha256": "0bde03b24ccfedeef1363709db9dbf94fe11adb78dd3e5d7dff9718243f6150d",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 240,
+      "title": "搜索二维矩阵 II",
+      "path": "hot 100/2026-11-07-240.md",
+      "snapshot": "grading/sources/2026-11-07-240.md",
+      "sha256": "58cebb5d55fde74ff835235b9f8be09fd2a3013bef1dfa2d0db9dd802a2f3b29",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 73,
+      "title": "矩阵置零",
+      "path": "hot 100/2026-11-07-73.md",
+      "snapshot": "grading/sources/2026-11-07-73.md",
+      "sha256": "8aee3464a83c3383460a78f4ad4a0abb5ca9aeb1258780c6f8e38209ce1b0cb0",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 141,
+      "title": "环形链表",
+      "path": "hot 100/2026-11-08-141.md",
+      "snapshot": "grading/sources/2026-11-08-141.md",
+      "sha256": "84cd4828fca85018fe8487763a6822569565c822a6011bc993a6b3c74d4c584c",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 142,
+      "title": "环形链表 II",
+      "path": "hot 100/2026-11-08-142.md",
+      "snapshot": "grading/sources/2026-11-08-142.md",
+      "sha256": "d01dcafa06afe97eeaa60cfbad4d9801f9d266b4c16e0471dabe39ca22630715",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 2,
+      "title": "两数相加",
+      "path": "hot 100/2026-11-08-2.md",
+      "snapshot": "grading/sources/2026-11-08-2.md",
+      "sha256": "fda622f449635c4e5dffac89f7b4bf745b7e1d8c0046d761a2ad88a79c3418c2",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 21,
+      "title": "合并两个有序链表",
+      "path": "hot 100/2026-11-08-21.md",
+      "snapshot": "grading/sources/2026-11-08-21.md",
+      "sha256": "50ad67b434ec657d069f4fcefa8ee4f312d97ea8b0f1803ec5603713e5464c59",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 234,
+      "title": "回文链表",
+      "path": "hot 100/2026-11-08-234.md",
+      "snapshot": "grading/sources/2026-11-08-234.md",
+      "sha256": "751838706566858740cc0a094fa362c099eabbf4f2f55f3d2667516fb85d0919",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 19,
+      "title": "删除链表的倒数第 N 个结点",
+      "path": "hot 100/2026-11-09-19.md",
+      "snapshot": "grading/sources/2026-11-09-19.md",
+      "sha256": "67ad404624a56aefbfd0b35c0fedb5823ab1507c20684c0e1421c8b9e4ba2597",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 138,
+      "title": "随机链表的复制",
+      "path": "hot 100/2026-11-11-138.md",
+      "snapshot": "grading/sources/2026-11-11-138.md",
+      "sha256": "64adb10466298b19999be825cb2213ca1cd4175040cc5481558907bef451d148",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 24,
+      "title": "两两交换链表中的节点",
+      "path": "hot 100/2026-11-11-24.md",
+      "snapshot": "grading/sources/2026-11-11-24.md",
+      "sha256": "c387005e492bb2f3e96cef1f9ed395627b763e4ca2943a94a2338b0333c5a68e",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    },
+    {
+      "problemNumber": 25,
+      "title": "K 个一组翻转链表",
+      "path": "hot 100/2026-11-11-25.md",
+      "snapshot": "grading/sources/2026-11-11-25.md",
+      "sha256": "3eec082fd162a3d1d451c997c22d5f1ef0f66d885c42ec3eefd46e3078093c26",
+      "origin": "完整真实Hot100笔记，仅转换为SQLite评测初始记录，未增补提交经历"
+    }
+  ]
+}
